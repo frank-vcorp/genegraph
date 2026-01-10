@@ -16,6 +16,7 @@ import 'reactflow/dist/style.css';
 import PersonNode from './PersonNode';
 import { RelationshipEdge } from './RelationshipEdge';
 import { RelationshipModal } from './RelationshipModal';
+import SaveStatus from './SaveStatus';
 import { Plus } from 'lucide-react';
 
 const nodeTypes = {
@@ -200,6 +201,8 @@ export default function Canvas() {
           setSelectedConnection(null);
         }}
       />
+
+      <SaveStatus position="bottom-right" showTime={true} />
     </>
   );
 }
