@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo -->
+  <rect width="512" height="512" fill="#2c3e50"/>
+  
+  <!-- Círculo (Mujer) y Cuadrado (Hombre) representando un genograma -->
+  <circle cx="153.6" cy="204.8" r="76.8" fill="#f8bbd9" stroke="#ffffff" stroke-width="3"/>
+  <rect x="281.6" y="128" width="153.6" height="153.6" fill="#bbdefb" stroke="#ffffff" stroke-width="3"/>
+  
+  <!-- Línea conectora -->
+  <line x1="230.4" y1="204.8" x2="281.6" y2="204.8" stroke="#ffffff" stroke-width="3"/>
+  
+  <!-- Triángulo (Hijo) -->
+  <polygon points="256,384 179.2,460.8 332.8,460.8" fill="#fff3e0" stroke="#ffffff" stroke-width="3"/>
+  
+  <!-- Línea a hijo -->
+  <line x1="256" y1="281.6" x2="256" y2="384" stroke="#ffffff" stroke-width="3"/>
+</svg>
