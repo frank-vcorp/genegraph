@@ -15,10 +15,12 @@ export default defineConfig({
         'node_modules/',
         'src/__tests__/',
       ],
-      lines: 60,
-      functions: 60,
-      branches: 60,
-      statements: 60,
+      thresholds: {
+        lines: 60,
+        functions: 60,
+        branches: 60,
+        statements: 60,
+      },
     },
   },
   resolve: {
