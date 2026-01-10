@@ -76,28 +76,8 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
       const state = get();
       if (!state.currentGenogram) throw new Error('No genogram to save');
 
-      // Save genogram metadata
-      await FirestoreService.updateGenogram(userId, genogramId, {
-        pacientName: state.currentGenogram.pacientName,
-        updatedAt: new Date(),
-      });
-
-      // Save persons (simplified - in production, sync individual changes)
-      // This is a batch-like operation
-      const existingPersons = await FirestoreService.getPersons(userId, genogramId);
-      const currentPersonIds = state.currentGenogram.persons.map(p => p.id);
-      
-      // Delete removed persons
-      for (const person of existingPersons) {
-        if (!currentPersonIds.includes(person.id)) {
-          await FirestoreService.deletePerson(userId, genogramId, person.id);
-        }
-      }
-
-      // Save/update all current persons
-      for (const person of state.currentGenogram.persons) {
-        await FirestoreService.updatePerson(userId, genogramId, person.id, person);
-      }
+      // 🚀 CP-010 FIX: Use optimized batch save instead of N+1 writes
+      await FirestoreService.batchSaveGenogram(userId, state.currentGenogram);
 
       set({ isSyncing: false });
     } catch (error) {

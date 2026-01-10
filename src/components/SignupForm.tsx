@@ -1,7 +1,7 @@
 /**
  * Signup Form Component
  * 🏗️ ARCH REFERENCE: CP-007-Firebase-Integration
- * Handles user registration with email/password
+ * Handles user registration with email/password and saves display name
  */
 
 'use client';
@@ -9,6 +9,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { updateProfile } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import { Mail, Lock, User, CheckCircle } from 'lucide-react';
 
 export default function SignupForm() {
@@ -26,6 +28,11 @@ export default function SignupForm() {
     setError(null);
 
     // Validation
+    if (!name.trim()) {
+      setError('El nombre es requerido');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Las contraseñas no coinciden');
       return;
@@ -39,8 +46,17 @@ export default function SignupForm() {
     setLoading(true);
 
     try {
+      // Create user account
       await signUp(email, password);
-      // TODO: Actualizar perfil del usuario con nombre (requiere API adicional)
+
+      // Get the currently authenticated user
+      const user = auth.currentUser;
+      if (user) {
+        // Save display name to Firebase Auth profile
+        await updateProfile(user, { displayName: name });
+        console.log('✅ Nombre de usuario guardado:', name);
+      }
+
       router.push('/dashboard');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error al registrarse';

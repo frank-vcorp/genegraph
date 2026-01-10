@@ -2,13 +2,18 @@ rules_version = '2';
 
 /**
  * Firestore Security Rules for GenoGraph Pro
- * 🏗️ ARCH REFERENCE: CP-008-Firestore-Security-Rules
+ * 🏗️ ARCH REFERENCE: CP-008-Firestore-Security-Rules (ENHANCED)
  * 
  * Security Model:
  * - Users can only read/write their own data
  * - Genograms belong to a single user (owner)
  * - Persons and relationships are sub-documents (inherited permissions)
+ * - Strict type validation for all fields
  * - No cross-user access allowed
+ * 
+ * Enums Validated:
+ * - Person.gender: ['male', 'female', 'other', 'unknown']
+ * - Relationship.relationType: ['parent', 'child', 'spouse', 'sibling', 'extended']
  */
 
 service cloud.firestore {
@@ -35,9 +40,24 @@ service cloud.firestore {
           // Inherited from parent: only owner can access
           allow read, write: if request.auth.uid == uid;
           
-          // Additional validation: ensure person data is valid
+          // Comprehensive validation for person data
           allow write: if request.resource.data.size() > 0
-            && request.resource.data.keys().hasAll(['name', 'gender']);
+            // Required fields present
+            && request.resource.data.keys().hasAll(['name', 'gender'])
+            // Type validation
+            && request.resource.data.name is string
+            && request.resource.data.gender is string
+            && request.resource.data.id is string
+            // Field length constraints
+            && request.resource.data.name.size() <= 100
+            && request.resource.data.gender.size() <= 20
+            // Enum validation for gender
+            && request.resource.data.gender in ['male', 'female', 'other', 'unknown']
+            // Optional fields type check if present
+            && (!('birthDate' in request.resource.data) || request.resource.data.birthDate is string)
+            && (!('deathDate' in request.resource.data) || request.resource.data.deathDate is string)
+            && (!('notes' in request.resource.data) || request.resource.data.notes is string)
+            && (!('notes' in request.resource.data) || request.resource.data.notes.size() <= 500);
         }
         
         // ============================================
@@ -47,9 +67,24 @@ service cloud.firestore {
           // Inherited from parent: only owner can access
           allow read, write: if request.auth.uid == uid;
           
-          // Additional validation: ensure required fields
+          // Comprehensive validation for relationship data
           allow write: if request.resource.data.size() > 0
-            && request.resource.data.keys().hasAll(['sourceId', 'targetId', 'relationType']);
+            // Required fields present
+            && request.resource.data.keys().hasAll(['sourceId', 'targetId', 'relationType'])
+            // Type validation
+            && request.resource.data.sourceId is string
+            && request.resource.data.targetId is string
+            && request.resource.data.relationType is string
+            && request.resource.data.id is string
+            // Field length constraints
+            && request.resource.data.sourceId.size() <= 50
+            && request.resource.data.targetId.size() <= 50
+            && request.resource.data.relationType.size() <= 30
+            // Enum validation for relationType
+            && request.resource.data.relationType in ['parent', 'child', 'spouse', 'sibling', 'extended']
+            // Optional field type check if present
+            && (!('label' in request.resource.data) || request.resource.data.label is string)
+            && (!('label' in request.resource.data) || request.resource.data.label.size() <= 100);
         }
       }
     }
@@ -63,3 +98,4 @@ service cloud.firestore {
     }
   }
 }
+

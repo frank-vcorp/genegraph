@@ -287,6 +287,59 @@ export class FirestoreService {
    * Subscribe to real-time updates of a genogram's relationships
    * Returns unsubscribe function
    */
+  /**
+   * Batch save entire genogram (optimized for large datasets)
+   * Saves genogram metadata, all persons, and all relationships in atomic transaction
+   * 🚀 CP-010 FIX: Eliminates N+1 writes pattern
+   */
+  static async batchSaveGenogram(
+    userId: string,
+    genogram: Genogram
+  ): Promise<void> {
+    try {
+      const batch = writeBatch(db);
+      const timestamp = new Date();
+
+      // Update genogram metadata
+      const genogramRef = doc(db, `users/${userId}/genograms/${genogram.id}`);
+      batch.update(genogramRef, {
+        pacientName: genogram.pacientName,
+        metadata: genogram.metadata || {},
+        updatedAt: timestamp,
+      });
+
+      // Save all persons in batch
+      for (const person of genogram.persons) {
+        const personRef = doc(
+          db,
+          `users/${userId}/genograms/${genogram.id}/persons/${person.id}`
+        );
+        batch.set(personRef, {
+          ...person,
+          updatedAt: timestamp,
+        });
+      }
+
+      // Save all relationships in batch
+      for (const relationship of genogram.connections) {
+        const relRef = doc(
+          db,
+          `users/${userId}/genograms/${genogram.id}/relationships/${relationship.id}`
+        );
+        batch.set(relRef, {
+          ...relationship,
+          updatedAt: timestamp,
+        });
+      }
+
+      // Commit all changes atomically
+      await batch.commit();
+    } catch (error) {
+      console.error('Error batch saving genogram:', error);
+      throw error;
+    }
+  }
+
   static subscribeToRelationships(
     userId: string,
     genogramId: string,
@@ -308,3 +361,4 @@ export class FirestoreService {
     }
   }
 }
+
