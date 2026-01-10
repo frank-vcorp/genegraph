@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
+    "@firebase/testing": "^0.20.11",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
@@ -37,6 +38,7 @@
     "@vitest/ui": "^4.0.16",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
+    "firebase-admin": "^13.6.0",
     "jsdom": "^27.4.0",
     "tailwindcss": "^4",
     "typescript": "^5",
