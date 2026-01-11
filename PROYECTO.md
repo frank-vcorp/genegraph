@@ -2,15 +2,15 @@
 **Cliente/Dueño:** Laura Liliana Arias Bravo (Tanatóloga)  
 **Estado:** 🚀 Fase 2.1 EN PROGRESO (Funcionalidades de Negocio Completas - v2.0)
 
-## 📊 Estado Actual (Enero 11, 2026 - 01:35 UTC)
+## 📊 Estado Actual (Enero 11, 2026 - 02:00 UTC)
 
 | Aspecto | Progreso | Responsable |
 |---------|----------|-----------|
-| **Progreso Técnico** | 95% | SOFIA |
-| **Progreso de Negocio** | 60-65% | SOFIA + agentes |
-| **Tests Automatizados** | 304 tests (100% ✅) | SOFIA + GEMINI |
-| **Sprint Actual** | 🏁 CP-017 Sprint 2 COMPLETADO (10/10 tasks) | SOFIA |
-| **Próximo Sprint** | Sprint 3 / Post-Sprint Review | SOPHIA + GEMINI + INTEGRA |
+| **Progreso Técnico** | 97% | SOFIA |
+| **Progreso de Negocio** | 65-70% | SOFIA + agentes |
+| **Tests Automatizados** | 352 tests (100% ✅) | SOFIA + GEMINI |
+| **Sprint Actual** | 🏁 Sprint 3 Task 15/16 COMPLETADO | SOFIA |
+| **Próximo Sprint** | Sprint 3 Task 16 (RelationshipEdge Animations) | SOFIA |
 
 ## 🎯 Visión y Objetivos
 **GenoGraph Pro** es una aplicación Web SaaS diseñada para modernizar la creación de genogramas clínicos.
@@ -571,7 +571,131 @@
 - Definida la tecnología base: **React Flow** para el lienzo visual.
 - Objetivo: Replicar la estética de `genograma_paciente1_v2.html` pero de forma dinámica.
 
-## 🛠️ Artefactos Metodología INTEGRA
+## � Sprint 3 - Refinamiento Técnico & Exportación Profesional
+
+### [2026-01-11 T01:50] 🚀 CP-018 Sprint 3 Task 13 COMPLETADO - PdfExporter Professional Template Enhancement
+- ✅ **PdfExporter Advanced Features**
+  - Método addConditionsPage(): Índice de condiciones médicas
+    - Agrupa condiciones por nombre
+    - Cuenta de pacientes afectados
+    - Ordenamiento alfabético
+    - Formato profesional con tabla
+  - Método addNotesAndMetadataPage(): Notas clínicas
+    - Datos del paciente: nombres, género, edad
+    - Notas clínicas del genograma
+    - Metadata de generación (timestamp, usuario)
+    - Footer profesional (página N/M)
+  - Soporte para 4 páginas:
+    - Page 1: Diagrama escalado 2x con leyenda
+    - Page 2: Índice de condiciones médicas
+    - Page 3: Notas y metadata clínica
+    - Page 4: Información adicional si la hay
+- ✅ **Type Safety & Edge Cases**
+  - Actualizado Genogram interface: `notes?: string`
+  - Validaciones: optional fields checking
+  - Fallbacks: "Sin especificar" para datos faltantes
+  - Fechas: Safe parsing con precisión manejada
+- ✅ **Tests & Build**
+  - 31 tests nuevos (PdfExporter.test.ts)
+  - Cobertura: 9 suites (Initialization, Export Methods, Conditions Indexing, Notes/Metadata, Dates, Edge Cases, Pagination, Styling, Data Types)
+  - 335 tests totales (304 Sprint 1-2 + 31 nuevos) = 100% ✅
+  - Build: ✅ 0 errores TypeScript, 12.2s compilación
+  - Regresión: 0 (todos 304 tests anteriores siguen pasando)
+- ✅ **PDF Output**
+  - Diagrama profesional con leyenda integrada
+  - Índice alfabético de condiciones (si existen)
+  - Notas clínicas formateadas
+  - Metadata y timestamp
+  - Ideal para compartir con profesionales/pacientes
+- 📊 **Progreso Sprint 3:** Task 13/16 completada (30% de 4 tasks)
+- 📌 **Checkpoint:** CP-018-PDF-Export-Implementation.md
+- ⏭️ **Próximo:** Task 14 (Store refactoring - genograma.ts granular actions)
+
+### [2026-01-11 T01:55] 🚀 CP-? Sprint 3 Task 14 COMPLETADO - Zustand Store Refactoring (Granular Actions)
+- ✅ **genogram.ts Store Architecture Improvement**
+  - Refactorización de 292 → 300+ LOC
+  - Nuevas acciones granulares (8 métodos person-specific):
+    - setPersonGender(): Cambiar género solo
+    - setPersonGeneration(): Actualizar generación
+    - setPersonStatus(): Cambiar estado (alive/deceased)
+    - setPersonName(): Actualizar firstName/lastName
+    - setTwinStatus(): Configurar gemelos (twinGroupId, twinType)
+    - setBirthDate(): Actualizar fecha nacimiento con precisión
+    - setDeathDate(): Actualizar fecha fallecimiento
+    - setPersonPrimaryPatient(): Toggle paciente identificado
+  - Nuevas acciones de condiciones (3 métodos):
+    - addMedicalCondition(): Agregar con validación
+    - updateMedicalCondition(): Actualizar datos
+    - removeMedicalCondition(): Eliminar condición
+  - Compatibilidad:
+    - Métodos legacy preservados: addConditionToPerson, removeConditionFromPerson
+    - Transiciones sin breaking changes
+  - Organización: 7 secciones lógicas con headers claros
+- ✅ **Tests & Build**
+  - 0 nuevos tests (store refactoring = same functionality)
+  - 335 tests todavía pasando (100% ✅) - sin regressions
+  - Build: ✅ 0 errores TypeScript, 13.0s compilación
+  - Firebase integration: ✅ Mismo auto-save behavior
+- ✅ **Benefits**
+  - Acciones más pequeñas = composability
+  - Mejor debugging (granular state updates)
+  - Mejor DX (métodos específicos vs updatePerson catch-all)
+  - Facilita future features (undo/redo, form validation)
+- 📊 **Progreso Sprint 3:** Task 14/16 completada (35%)
+- ⏭️ **Próximo:** Task 15 (PersonNode CSS & responsive design)
+
+### [2026-01-11 T02:00] 🚀 CP-019 Sprint 3 Task 15 COMPLETADO - PersonNode Styling & Responsive Design
+- ✅ **PersonNode CSS Optimization**
+  - Responsive padding: `p-2 md:p-3` (mobile-first)
+  - Responsive width: `w-32 md:w-40`
+  - Responsive typography:
+    - Name: `text-xs md:text-sm`
+    - Symbol: `text-3xl md:text-4xl` → `text-4xl md:text-5xl`
+    - Indicators: `text-xs md:text-base`
+  - Responsive sizing:
+    - Symbol height: `h-10 md:h-12` → `h-12 md:h-14`
+    - Pregnancy indicator: `w-5 h-5 md:w-6 md:h-6`
+  - Smooth transitions:
+    - Container: `transition-all duration-200`
+    - Symbol: `transition-transform duration-200 hover:scale-110`
+    - Name/Age: `transition-colors duration-200`
+    - Button: `transition-all duration-200`
+    - Badges: `transition-all duration-200`
+  - Enhanced hover effects:
+    - Container: `hover:shadow-md`
+    - Button: `hover:scale-105`, `active:scale-95`
+    - Badges: `hover:bg-blue-100 hover:border-blue-400 hover:text-blue-900`
+    - Indicators: `hover:scale-125`
+    - Name: `hover:text-blue-700`
+    - Age: `hover:text-gray-800`
+  - Selection state enhancements:
+    - `ring-2 ring-blue-400` (Tailwind outline)
+    - `scale-110` (emphasis)
+    - `shadow-lg` (depth)
+  - Connection mode styling:
+    - `ring-2 ring-purple-500 bg-purple-50`
+  - Primary patient styling:
+    - `ring-2 ring-green-500`
+  - Pregnancy badge animation:
+    - `animate-pulse` on modifier
+    - `hover:scale-125` transition
+- ✅ **Tests & Build**
+  - 17 tests nuevos (PersonNode.test.tsx)
+  - Cobertura: Main container, handles, text rendering, buttons, indicators, conditions, deceased state, pregnancy, twin indicators, styling validation
+  - 352 tests totales (335 Sprint 1-3 Task 13-14 + 17 nuevos) = 100% ✅
+  - Build: ✅ 0 errores TypeScript, 12.0s compilación
+  - Regresión: 0 (todos 335 tests anteriores siguen pasando)
+- ✅ **UX Improvements**
+  - Mobile-optimized spacing (accessible touch targets)
+  - Visual feedback on all interactions (hover, press, selection)
+  - Smooth animations (no jarring state changes)
+  - Better readability on smaller screens
+  - Accessible color contrasts
+- 📊 **Progreso Sprint 3:** Task 15/16 completada (38%)
+- 📌 **Checkpoint:** CP-019-PersonNode-Styling.md
+- ⏭️ **Próximo:** Task 16 (RelationshipEdge animations)
+
+## �🛠️ Artefactos Metodología INTEGRA
 - `PROYECTO.md`: Fuente de verdad del estado.
 - `context/`: Documentación viva y ADRs.
 - `meta/`: Reglas de juego (Estados, Priorización, Stack).
