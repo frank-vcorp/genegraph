@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genograma - Daniel Hernández López</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header h2 {
+            font-size: 1.2rem;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+        
+        .header .fecha {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+        
+        .genograma-container {
+            padding: 40px;
+            background: #fafbfc;
+        }
+        
+        .genograma {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .generacion {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 60px;
+            position: relative;
+        }
+        
+        .generacion-label {
+            position: absolute;
+            left: -80px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+        
+        .pareja {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+        }
+        
+        .linea-matrimonio {
+            width: 40px;
+            height: 3px;
+            background: #2d5a87;
+        }
+        
+        .persona {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .persona:hover {
+            transform: scale(1.05);
+        }
+        
+        .persona:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        /* Símbolos */
+        .simbolo {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .hombre {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 3px solid #1976d2;
+            box-shadow: 0 4px 6px rgba(25, 118, 210, 0.2);
+        }
+        
+        .mujer {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%);
+            border: 3px solid #c2185b;
+            border-radius: 50%;
+            box-shadow: 0 4px 6px rgba(194, 24, 91, 0.2);
+        }
+        
+        .fallecido::after {
+            content: '';
+            position: absolute;
+            width: 70px;
+            height: 3px;
+            background: #d32f2f;
+            transform: rotate(-45deg);
+            top: 50%;
+            left: 50%;
+            margin-left: -35px;
+            margin-top: -1.5px;
+        }
+        
+        .ausente {
+            opacity: 0.4;
+            border-style: dashed !important;
+        }
+        
+        .info {
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        .nombre {
+            font-weight: 600;
+            color: #1e3a5f;
+            font-size: 0.85rem;
+            max-width: 100px;
+        }
+        
+        .edad {
+            color: #666;
+            font-size: 0.75rem;
+            margin-top: 2px;
+        }
+        
+        .relacion {
+            color: #888;
+            font-size: 0.7rem;
+            font-style: italic;
+            margin-top: 2px;
+        }
+        
+        /* Líneas de conexión */
+        .linea-vertical {
+            width: 3px;
+            height: 40px;
+            background: #2d5a87;
+        }
+        
+        .linea-vertical.corta {
+            height: 25px;
+        }
+        
+        .linea-horizontal {
+            height: 3px;
+            background: #2d5a87;
+        }
+        
+        .conexion-hijos {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        /* Línea punteada para padre ausente */
+        .linea-ausente {
+            border-top: 3px dashed #999;
+            width: 40px;
+        }
+        
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-10px);
+            background: #1e3a5f;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -8px;
+            border-width: 8px;
+            border-style: solid;
+            border-color: #1e3a5f transparent transparent transparent;
+        }
+        
+        /* Leyenda */
+        .leyenda {
+            background: white;
+            padding: 30px;
+            border-top: 1px solid #eee;
+        }
+        
+        .leyenda h3 {
+            color: #1e3a5f;
+            margin-bottom: 20px;
+            font-size: 1rem;
+        }
+        
+        .leyenda-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+        }
+        
+        .leyenda-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: #555;
+        }
+        
+        .leyenda-simbolo {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .leyenda-simbolo.hombre {
+            width: 25px;
+            height: 25px;
+        }
+        
+        .leyenda-simbolo.mujer {
+            width: 25px;
+            height: 25px;
+        }
+        
+        .leyenda-linea {
+            width: 30px;
+            height: 3px;
+            background: #2d5a87;
+        }
+        
+        .leyenda-linea.fallecido {
+            background: #d32f2f;
+            transform: rotate(-45deg);
+        }
+        
+        .leyenda-linea.ausente {
+            border-top: 3px dashed #999;
+            background: transparent;
+            height: 0;
+        }
+        
+        /* Paciente identificado */
+        .paciente-id .simbolo {
+            box-shadow: 0 0 0 4px #4caf50, 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+        
+        /* Cuidador principal */
+        .cuidador-principal .simbolo {
+            box-shadow: 0 0 0 4px #ff9800, 0 4px 15px rgba(255, 152, 0, 0.4);
+        }
+        
+        /* Notas clínicas */
+        .notas {
+            background: #fff8e1;
+            padding: 25px 30px;
+            border-left: 4px solid #ffc107;
+            margin: 0 30px 30px 30px;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .notas h4 {
+            color: #f57c00;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+        
+        .notas p {
+            color: #666;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        
+        /* Vinculo especial */
+        .vinculo-especial {
+            position: relative;
+        }
+        
+        .vinculo-especial::before {
+            content: '♥♥♥';
+            position: absolute;
+            left: 50%;
+            top: -15px;
+            transform: translateX(-50%);
+            color: #e91e63;
+            font-size: 10px;
+            letter-spacing: 2px;
+        }
+        
+        /* Etiqueta de rol */
+        .rol-tag {
+            background: #ff9800;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        /* Footer */
+        .footer {
+            background: #f5f5f5;
+            padding: 20px 30px;
+            text-align: center;
+            color: #888;
+            font-size: 0.8rem;
+        }
+        
+        /* Estructura especial para este genograma */
+        .familia-materna {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .linea-conexion-lateral {
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>GENOGRAMA FAMILIAR</h1>
+            <h2>Daniel Hernández López</h2>
+            <div class="fecha">Fecha de elaboración: 18 de diciembre de 2025</div>
+        </div>
+        
+        <div class="genograma-container">
+            <div class="genograma">
+                
+                <!-- Generación Abuelos (solo abuela materna relevante) -->
+                <div class="generacion" style="margin-bottom: 10px;">
+                    <div class="persona cuidador-principal">
+                        <div class="tooltip">Abuela materna - FALLECIDA<br>Hace 2 meses por enfermedad crónica<br>Cuidadora principal desde el nacimiento</div>
+                        <div class="simbolo mujer fallecido"></div>
+                        <div class="info">
+                            <div class="nombre">Abuela Materna</div>
+                            <div class="edad">✝ (hace 2 meses)</div>
+                            <div class="rol-tag">CUIDADORA PRINCIPAL</div>
+                            <div class="relacion">Funciones parentales<br>primarias</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Línea a hija (madre del paciente) -->
+                <div class="conexion-hijos">
+                    <div class="linea-vertical corta"></div>
+                </div>
+                
+                <!-- Generación Padres -->
+                <div class="generacion">
+                    <div class="pareja">
+                        <div class="persona">
+                            <div class="tooltip">Padre biológico AUSENTE<br>Sin contacto desde el nacimiento<br>Identidad desconocida para el paciente</div>
+                            <div class="simbolo hombre ausente"></div>
+                            <div class="info">
+                                <div class="nombre">Padre</div>
+                                <div class="edad">Desconocido</div>
+                                <div class="relacion">Ausente desde<br>el nacimiento</div>
+                            </div>
+                        </div>
+                        <div class="linea-ausente"></div>
+                        <div class="persona">
+                            <div class="tooltip">Madre, 35 años<br>Madre soltera<br>Delegó crianza en la abuela<br>por motivos laborales</div>
+                            <div class="simbolo mujer"></div>
+                            <div class="info">
+                                <div class="nombre">Madre</div>
+                                <div class="edad">35 años</div>
+                                <div class="relacion">Relación ambivalente<br>con el paciente</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Línea de conexión a hijo -->
+                <div class="conexion-hijos">
+                    <div class="linea-vertical"></div>
+                </div>
+                
+                <!-- Paciente -->
+                <div class="generacion">
+                    <div class="persona paciente-id vinculo-especial">
+                        <div class="tooltip">PACIENTE IDENTIFICADO<br>Estudiante de secundaria, 14 años<br>Duelo por fallecimiento de abuela</div>
+                        <div class="simbolo hombre"></div>
+                        <div class="info">
+                            <div class="nombre">Daniel</div>
+                            <div class="edad">14 años</div>
+                            <div class="relacion">Paciente identificado</div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- Diagrama de relaciones -->
+            <svg width="100%" height="80" style="margin-top: 30px;">
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#ff9800"/>
+                    </marker>
+                </defs>
+                <!-- Línea de vínculo fuerte abuela-nieto -->
+                <line x1="50%" y1="10" x2="50%" y2="60" stroke="#ff9800" stroke-width="3" stroke-dasharray="10,5"/>
+                <text x="50%" y="75" text-anchor="middle" fill="#ff9800" font-size="12" font-weight="bold">
+                    Vínculo afectivo primario (Abuela ↔ Daniel)
+                </text>
+            </svg>
+        </div>
+        
+        <div class="notas">
+            <h4>📋 Notas Clínicas Relevantes</h4>
+            <p>
+                <strong>Motivo de consulta:</strong> Duelo por fallecimiento de abuela materna.<br>
+                <strong>Estructura familiar:</strong> Familia nuclear incompleta. Padre ausente desde el nacimiento.<br>
+                <strong>Observaciones:</strong> La abuela cumplía funciones parentales primarias: cuidado, educación, contención emocional y establecimiento de límites. 
+                Tras el fallecimiento, se observa reacomodo familiar con alto impacto emocional. El paciente presenta tristeza persistente, aislamiento, bajo rendimiento escolar e irritabilidad.
+                La relación madre-hijo es ambivalente debido a la delegación de la crianza.
+            </p>
+        </div>
+        
+        <div class="leyenda">
+            <h3>Simbología</h3>
+            <div class="leyenda-items">
+                <div class="leyenda-item">
+                    <div class="leyenda-simbolo hombre"></div>
+                    <span>Hombre</span>
+                </div>
+                <div class="leyenda-item">
+                    <div class="leyenda-simbolo mujer"></div>
+                    <span>Mujer</span>
+                </div>
+                <div class="leyenda-item">
+                    <div class="leyenda-linea fallecido"></div>
+                    <span>Fallecido</span>
+                </div>
+                <div class="leyenda-item">
+                    <div class="leyenda-linea ausente"></div>
+                    <span>Relación ausente/cortada</span>
+                </div>
+                <div class="leyenda-item">
+                    <span style="color: #4caf50; font-weight: bold;">◉</span>
+                    <span>Paciente identificado</span>
+                </div>
+                <div class="leyenda-item">
+                    <span style="color: #ff9800; font-weight: bold;">◉</span>
+                    <span>Cuidador principal</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Examinador: Laura Liliana Arias Bravo | Historia Clínica Tanatológica
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genograma - María del Carmen Fraile-Patiño</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #6c3483 0%, #8e44ad 100%);
+            color: white;
+            padding: 25px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-left h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .header-left h2 {
+            font-size: 1.1rem;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+        
+        .header-right {
+            text-align: right;
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+        
+        .caso-info {
+            background: #f5eef8;
+            padding: 15px 30px;
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #d7bde2;
+        }
+        
+        .caso-info-item {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .caso-info-item strong {
+            color: #6c3483;
+        }
+        
+        .caso-info-item span {
+            color: #555;
+        }
+        
+        /* GENOGRAMA SVG */
+        .genograma-container {
+            padding: 30px;
+            overflow-x: auto;
+            background: #fafbfc;
+        }
+        
+        .genograma-svg {
+            display: block;
+            margin: 0 auto;
+        }
+        
+        /* Estilos para tooltips */
+        .persona-grupo:hover .tooltip-box {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .tooltip-box {
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        /* DUELO PERINATAL BOX */
+        .duelo-perinatal-section {
+            background: linear-gradient(135deg, #f5eef8 0%, #ebdef0 100%);
+            padding: 25px 30px;
+            border-left: 5px solid #8e44ad;
+            margin: 0 30px 20px 30px;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .duelo-perinatal-section h3 {
+            color: #6c3483;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .duelo-perinatal-section p {
+            color: #555;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        /* NOTAS CLÍNICAS */
+        .notas-section {
+            padding: 25px 30px;
+            background: #fff;
+            border-top: 1px solid #eee;
+        }
+        
+        .notas-section h3 {
+            color: #6c3483;
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .notas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .nota-card {
+            background: #f8f9fa;
+            border-left: 4px solid #8e44ad;
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .nota-card.warning {
+            border-left-color: #e74c3c;
+        }
+        
+        .nota-card.success {
+            border-left-color: #27ae60;
+        }
+        
+        .nota-card.special {
+            border-left-color: #9b59b6;
+        }
+        
+        .nota-card h4 {
+            color: #6c3483;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+        
+        .nota-card p {
+            color: #555;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+        
+        /* LEYENDA */
+        .leyenda-section {
+            background: #6c3483;
+            color: white;
+            padding: 25px 30px;
+        }
+        
+        .leyenda-section h3 {
+            font-size: 1rem;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .leyenda-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+        }
+        
+        .leyenda-categoria {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .leyenda-categoria h4 {
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+            color: #d7bde2;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .leyenda-items {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .leyenda-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.8rem;
+        }
+        
+        .leyenda-simbolo {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .footer {
+            background: #4a235a;
+            color: #d7bde2;
+            padding: 15px 30px;
+            text-align: center;
+            font-size: 0.8rem;
+        }
+        
+        /* Generaciones labels */
+        .gen-label {
+            font-size: 11px;
+            fill: #7f8c8d;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>GENOGRAMA FAMILIAR</h1>
+                <h2>Paciente 3: María del Carmen Fraile-Patiño</h2>
+            </div>
+            <div class="header-right">
+                <div>Fecha: 8 de enero de 2026</div>
+                <div>Examinador: Laura Liliana Arias Bravo</div>
+                <div>Caso: Duelo perinatal por pérdida gestacional</div>
+            </div>
+        </div>
+        
+        <div class="caso-info">
+            <div class="caso-info-item">
+                <strong>Paciente:</strong>
+                <span>María del Carmen Fraile-Patiño, 27 años</span>
+            </div>
+            <div class="caso-info-item">
+                <strong>Estado civil:</strong>
+                <span>Casada</span>
+            </div>
+            <div class="caso-info-item">
+                <strong>Ocupación:</strong>
+                <span>Ama de casa</span>
+            </div>
+            <div class="caso-info-item">
+                <strong>Motivo:</strong>
+                <span>Duelo por pérdida gestacional (~3 meses)</span>
+            </div>
+        </div>
+        
+        <div class="genograma-container">
+            <svg class="genograma-svg" viewBox="0 0 1200 850" width="100%" height="800">
+                <!-- Definiciones -->
+                <defs>
+                    <!-- Gradientes -->
+                    <linearGradient id="maleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#e3f2fd"/>
+                        <stop offset="100%" style="stop-color:#bbdefb"/>
+                    </linearGradient>
+                    <linearGradient id="femaleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#fce4ec"/>
+                        <stop offset="100%" style="stop-color:#f8bbd9"/>
+                    </linearGradient>
+                    <linearGradient id="lossGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#f3e5f5"/>
+                        <stop offset="100%" style="stop-color:#e1bee7"/>
+                    </linearGradient>
+                </defs>
+                
+                <!-- Fondo de generaciones -->
+                <rect x="0" y="45" width="1200" height="150" fill="#f8f9fa" opacity="0.5"/>
+                <rect x="0" y="235" width="1200" height="150" fill="#fff" opacity="0.5"/>
+                <rect x="0" y="425" width="1200" height="150" fill="#f8f9fa" opacity="0.5"/>
+                <rect x="0" y="615" width="1200" height="180" fill="#f3e5f5" opacity="0.3"/>
+                
+                <!-- Labels de generación -->
+                <text x="20" y="120" class="gen-label">Generación 1 (Abuelos)</text>
+                <text x="20" y="310" class="gen-label">Generación 2 (Padres / Suegros)</text>
+                <text x="20" y="500" class="gen-label">Generación 3 (Paciente y Esposo)</text>
+                <text x="20" y="700" class="gen-label">Generación 4 (Hijos)</text>
+                
+                <!-- ==================== GENERACIÓN 1: ABUELOS ==================== -->
+                
+                <!-- ABUELOS PATERNOS (de María del Carmen) -->
+                <g class="persona-grupo" transform="translate(200, 90)">
+                    <rect x="-22" y="-22" width="44" height="44" fill="url(#maleGrad)" stroke="#1565c0" stroke-width="2"/>
+                    <line x1="-28" y1="28" x2="28" y2="-28" stroke="#c0392b" stroke-width="3"/>
+                    <text x="0" y="40" text-anchor="middle" font-size="10" font-weight="600" fill="#2c3e50">Ramón</text>
+                    <text x="0" y="52" text-anchor="middle" font-size="8" fill="#7f8c8d">Fraile Gutiérrez</text>
+                    <text x="0" y="64" text-anchor="middle" font-size="8" fill="#7f8c8d">1940-2018</text>
+                    <text x="0" y="76" text-anchor="middle" font-size="7" fill="#95a5a6">Agricultor</text>
+                </g>
+                
+                <g class="persona-grupo" transform="translate(320, 90)">
+                    <circle cx="0" cy="0" r="22" fill="url(#femaleGrad)" stroke="#c2185b" stroke-width="2"/>
+                    <text x="0" y="40" text-anchor="middle" font-size="10" font-weight="600" fill="#2c3e50">Esperanza</text>
+                    <text x="0" y="52" text-anchor="middle" font-size="8" fill="#7f8c8d">Morales de Fraile</text>
+                    <text x="0" y="64" text-anchor="middle" font-size="8" fill="#7f8c8d">1945 (80 años)</text>
+                    <text x="0" y="76" text-anchor="middle" font-size="7" fill="#95a5a6">Ama de casa</text>
+                </g>
+                <line x1="222" y1="90" x2="298" y2="90" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- ABUELOS MATERNOS (de María del Carmen) -->
+                <g class="persona-grupo" transform="translate(500, 90)">
+                    <rect x="-22" y="-22" width="44" height="44" fill="url(#maleGrad)" stroke="#1565c0" stroke-width="2"/>
+                    <text x="0" y="40" text-anchor="middle" font-size="10" font-weight="600" fill="#2c3e50">Alberto</text>
+                    <text x="0" y="52" text-anchor="middle" font-size="8" fill="#7f8c8d">Patiño Cervantes</text>
+                    <text x="0" y="64" text-anchor="middle" font-size="8" fill="#7f8c8d">1938 (87 años)</text>
+                    <text x="0" y="76" text-anchor="middle" font-size="7" fill="#95a5a6">Comerciante jubilado</text>
+                </g>
+                
+                <g class="persona-grupo" transform="translate(620, 90)">
+                    <circle cx="0" cy="0" r="22" fill="url(#femaleGrad)" stroke="#c2185b" stroke-width="2"/>
+                    <line x1="-28" y1="28" x2="28" y2="-28" stroke="#c0392b" stroke-width="3"/>
+                    <text x="0" y="40" text-anchor="middle" font-size="10" font-weight="600" fill="#2c3e50">Josefina</text>
+                    <text x="0" y="52" text-anchor="middle" font-size="8" fill="#7f8c8d">López de Patiño</text>
+                    <text x="0" y="64" text-anchor="middle" font-size="8" fill="#7f8c8d">1942-2020</text>
+                    <text x="0" y="76" text-anchor="middle" font-size="7" fill="#95a5a6">Maestra</text>
+                </g>
+                <line x1="522" y1="90" x2="598" y2="90" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- ABUELOS PATERNOS (de Juan Luis - esposo) -->
+                <g class="persona-grupo" transform="translate(800, 90)">
+                    <rect x="-22" y="-22" width="44" height="44" fill="url(#maleGrad)" stroke="#1565c0" stroke-width="2"/>
+                    <line x1="-28" y1="28" x2="28" y2="-28" stroke="#c0392b" stroke-width="3"/>
+                    <text x="0" y="40" text-anchor="middle" font-size="10" font-weight="600" fill="#2c3e50">Luis</text>
+                    <text x="0" y="52" text-anchor="middle" font-size="8" fill="#7f8c8d">Arias Mendoza</text>
+                    <text x="0" y="64" text-anchor="middle" font-size="8" fill="#7f8c8d">1935-2012</text>
+                    <text x="0" y="76" text-anchor="middle" font-size="7" fill="#95a5a6">Mecánico</text>
+                </g>
+                
+                <g class="persona-grupo" transform="translate(920, 90)">
+                    <circle cx="0" cy="0" r="22" fill="url(#femaleGrad)" stroke="#c2185b" stroke-width="2"/>
+                    <text x="0" y="40" text-anchor="middle" font-size="10" font-weight="600" fill="#2c3e50">Elena</text>
+                    <text x="0" y="52" text-anchor="middle" font-size="8" fill="#7f8c8d">Tobar de Arias</text>
+                    <text x="0" y="64" text-anchor="middle" font-size="8" fill="#7f8c8d">1940 (85 años)</text>
+                    <text x="0" y="76" text-anchor="middle" font-size="7" fill="#95a5a6">Costurera jubilada</text>
+                </g>
+                <line x1="822" y1="90" x2="898" y2="90" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- ==================== GENERACIÓN 2: PADRES / SUEGROS ==================== -->
+                
+                <!-- Líneas de descendencia -->
+                <line x1="260" y1="112" x2="260" y2="160" stroke="#2c3e50" stroke-width="2"/>
+                <line x1="200" y1="160" x2="320" y2="160" stroke="#2c3e50" stroke-width="2"/>
+                
+                <line x1="560" y1="112" x2="560" y2="160" stroke="#2c3e50" stroke-width="2"/>
+                <line x1="480" y1="160" x2="640" y2="160" stroke="#2c3e50" stroke-width="2"/>
+                
+                <line x1="860" y1="112" x2="860" y2="160" stroke="#2c3e50" stroke-width="2"/>
+                <line x1="780" y1="160" x2="940" y2="160" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- PADRE de María del Carmen -->
+                <g class="persona-grupo" transform="translate(260, 280)">
+                    <rect x="-25" y="-25" width="50" height="50" fill="url(#maleGrad)" stroke="#1565c0" stroke-width="2"/>
+                    <text x="0" y="42" text-anchor="middle" font-size="10" font-weight="600" fill="#2c3e50">José Antonio</text>
+                    <text x="0" y="54" text-anchor="middle" font-size="8" fill="#7f8c8d">Fraile Morales</text>
+                    <text x="0" y="66" text-anchor="middle" font-size="8" fill="#7f8c8d">1968 (57 años)</text>
+                    <text x="0" y="78" text-anchor="middle" font-size="7" fill="#95a5a6">Comerciante</text>
+                </g>
+                <line x1="260" y1="160" x2="260" y2="255" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- Hermano del padre -->
+                <g class="persona-grupo" transform="translate(150, 280)">
+                    <rect x="-20" y="-20" width="40" height="40" fill="url(#maleGrad)" stroke="#1565c0" stroke-width="2"/>
+                    <text x="0" y="35" text-anchor="middle" font-size="9" fill="#2c3e50">Miguel</text>
+                    <text x="0" y="46" text-anchor="middle" font-size="7" fill="#7f8c8d">Fraile M.</text>
+                    <text x="0" y="57" text-anchor="middle" font-size="7" fill="#7f8c8d">1965 (60 años)</text>
+                </g>
+                <line x1="200" y1="160" x2="150" y2="160" stroke="#2c3e50" stroke-width="2"/>
+                <line x1="150" y1="160" x2="150" y2="260" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- MADRE de María del Carmen -->
+                <g class="persona-grupo" transform="translate(420, 280)">
+                    <circle cx="0" cy="0" r="25" fill="url(#femaleGrad)" stroke="#c2185b" stroke-width="2"/>
+                    <text x="0" y="42" text-anchor="middle" font-size="10" font-weight="600" fill="#2c3e50">Guadalupe</text>
+                    <text x="0" y="54" text-anchor="middle" font-size="8" fill="#7f8c8d">Patiño López</text>
+                    <text x="0" y="66" text-anchor="middle" font-size="8" fill="#7f8c8d">1972 (53 años)</text>
+                    <text x="0" y="78" text-anchor="middle" font-size="7" fill="#95a5a6">Ama de casa</text>
+                    <rect class="tooltip-box" x="-90" y="-85" width="180" height="50" rx="5" fill="#2c3e50" opacity="0.95"/>
+                    <text class="tooltip-box" x="0" y="-63" text-anchor="middle" font-size="9" fill="white">Minimiza el duelo de María</text>
+                    <text class="tooltip-box" x="0" y="-48" text-anchor="middle" font-size="9" fill="white">"Ya tendrás otros hijos"</text>
+                </g>
+                <line x1="480" y1="160" x2="420" y2="160" stroke="#2c3e50" stroke-width="2"/>
+                <line x1="420" y1="160" x2="420" y2="255" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- Matrimonio padres de María -->
+                <line x1="285" y1="280" x2="395" y2="280" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- Hermanas de la madre -->
+                <g class="persona-grupo" transform="translate(560, 280)">
+                    <circle cx="0" cy="0" r="20" fill="url(#femaleGrad)" stroke="#c2185b" stroke-width="2"/>
+                    <text x="0" y="35" text-anchor="middle" font-size="9" fill="#2c3e50">Silvia</text>
+                    <text x="0" y="46" text-anchor="middle" font-size="7" fill="#7f8c8d">Patiño L.</text>
+                    <text x="0" y="57" text-anchor="middle" font-size="7" fill="#7f8c8d">1975 (50 años)</text>
+                </g>
+                <line x1="560" y1="160" x2="560" y2="260" stroke="#2c3e50" stroke-width="2"/>
+                
+                <g class="persona-grupo" transform="translate(640, 280)">
+                    <circle cx="0" cy="0" r="20" fill="url(#femaleGrad)" stroke="#c2185b" stroke-width="2"/>
+                    <text x="0" y="35" text-anchor="middle" font-size="9" fill="#2c3e50">Patricia</text>
+                    <text x="0" y="46" text-anchor="middle" font-size="7" fill="#7f8c8d">Patiño L.</text>
+                    <text x="0" y="57" text-anchor="middle" font-size="7" fill="#7f8c8d">1978 (47 años)</text>
+                </g>
+                <line x1="640" y1="160" x2="640" y2="260" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- PADRE de Juan Luis (suegro) -->
+                <g class="persona-grupo" transform="translate(780, 280)">
+                    <rect x="-25" y="-25" width="50" height="50" fill="url(#maleGrad)" stroke="#1565c0" stroke-width="2"/>
+                    <text x="0" y="42" text-anchor="middle" font-size="10" font-weight="600" fill="#2c3e50">Roberto</text>
+                    <text x="0" y="54" text-anchor="middle" font-size="8" fill="#7f8c8d">Arias Tobar</text>
+                    <text x="0" y="66" text-anchor="middle" font-size="8" fill="#7f8c8d">1962 (63 años)</text>
+                    <text x="0" y="78" text-anchor="middle" font-size="7" fill="#95a5a6">Taxista</text>
+                </g>
+                <line x1="780" y1="160" x2="780" y2="255" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- MADRE de Juan Luis (suegra) -->
+                <g class="persona-grupo" transform="translate(920, 280)">
+                    <circle cx="0" cy="0" r="25" fill="url(#femaleGrad)" stroke="#c2185b" stroke-width="2"/>
+                    <text x="0" y="42" text-anchor="middle" font-size="10" font-weight="600" fill="#2c3e50">Martha</text>
+                    <text x="0" y="54" text-anchor="middle" font-size="8" fill="#7f8c8d">González de Arias</text>
+                    <text x="0" y="66" text-anchor="middle" font-size="8" fill="#7f8c8d">1965 (60 años)</text>
+                    <text x="0" y="78" text-anchor="middle" font-size="7" fill="#95a5a6">Empleada</text>
+                </g>
+                <line x1="940" y1="160" x2="920" y2="160" stroke="#2c3e50" stroke-width="2"/>
+                <line x1="920" y1="160" x2="920" y2="255" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- Matrimonio suegros -->
+                <line x1="805" y1="280" x2="895" y2="280" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- Hermano de Juan Luis -->
+                <g class="persona-grupo" transform="translate(1020, 280)">
+                    <rect x="-20" y="-20" width="40" height="40" fill="url(#maleGrad)" stroke="#1565c0" stroke-width="2"/>
+                    <text x="0" y="35" text-anchor="middle" font-size="9" fill="#2c3e50">Carlos</text>
+                    <text x="0" y="46" text-anchor="middle" font-size="7" fill="#7f8c8d">Arias G.</text>
+                    <text x="0" y="57" text-anchor="middle" font-size="7" fill="#7f8c8d">1992 (33 años)</text>
+                </g>
+                <line x1="940" y1="160" x2="1020" y2="160" stroke="#2c3e50" stroke-width="2"/>
+                <line x1="1020" y1="160" x2="1020" y2="260" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- ==================== GENERACIÓN 3: PACIENTE Y ESPOSO ==================== -->
+                
+                <!-- Líneas de descendencia -->
+                <line x1="340" y1="305" x2="340" y2="360" stroke="#2c3e50" stroke-width="2"/>
+                <line x1="340" y1="360" x2="450" y2="360" stroke="#2c3e50" stroke-width="2"/>
+                
+                <line x1="850" y1="305" x2="850" y2="360" stroke="#2c3e50" stroke-width="2"/>
+                <line x1="700" y1="360" x2="850" y2="360" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- Hermano de María del Carmen -->
+                <g class="persona-grupo" transform="translate(340, 480)">
+                    <rect x="-22" y="-22" width="44" height="44" fill="url(#maleGrad)" stroke="#1565c0" stroke-width="2"/>
+                    <text x="0" y="38" text-anchor="middle" font-size="10" font-weight="600" fill="#2c3e50">Diego</text>
+                    <text x="0" y="50" text-anchor="middle" font-size="8" fill="#7f8c8d">Fraile Patiño</text>
+                    <text x="0" y="62" text-anchor="middle" font-size="8" fill="#7f8c8d">1995 (30 años)</text>
+                    <text x="0" y="74" text-anchor="middle" font-size="7" fill="#95a5a6">Contador</text>
+                </g>
+                <line x1="340" y1="360" x2="340" y2="458" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- PACIENTE: MARÍA DEL CARMEN -->
+                <g class="persona-grupo" transform="translate(500, 480)">
+                    <!-- Doble círculo: paciente identificado -->
+                    <circle cx="0" cy="0" r="32" fill="none" stroke="#27ae60" stroke-width="3"/>
+                    <circle cx="0" cy="0" r="26" fill="url(#femaleGrad)" stroke="#c2185b" stroke-width="2"/>
+                    <text x="0" y="5" text-anchor="middle" font-size="12" font-weight="bold" fill="#c2185b">PI</text>
+                    <text x="0" y="50" text-anchor="middle" font-size="11" font-weight="700" fill="#27ae60">MARÍA DEL CARMEN</text>
+                    <text x="0" y="63" text-anchor="middle" font-size="9" fill="#2c3e50">Fraile-Patiño</text>
+                    <text x="0" y="76" text-anchor="middle" font-size="8" fill="#7f8c8d">1998 (27 años)</text>
+                    <text x="0" y="89" text-anchor="middle" font-size="7" fill="#95a5a6">Ama de casa</text>
+                    <text x="0" y="102" text-anchor="middle" font-size="7" fill="#95a5a6">Lic. inconclusa</text>
+                </g>
+                <line x1="450" y1="360" x2="500" y2="360" stroke="#2c3e50" stroke-width="2"/>
+                <line x1="500" y1="360" x2="500" y2="448" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- ESPOSO: JUAN LUIS -->
+                <g class="persona-grupo" transform="translate(700, 480)">
+                    <rect x="-26" y="-26" width="52" height="52" fill="url(#maleGrad)" stroke="#1565c0" stroke-width="2"/>
+                    <text x="0" y="45" text-anchor="middle" font-size="11" font-weight="600" fill="#2c3e50">JUAN LUIS</text>
+                    <text x="0" y="58" text-anchor="middle" font-size="9" fill="#7f8c8d">Arias Tobar</text>
+                    <text x="0" y="71" text-anchor="middle" font-size="8" fill="#7f8c8d">1995 (30 años)</text>
+                    <text x="0" y="84" text-anchor="middle" font-size="7" fill="#95a5a6">Empleado de fábrica</text>
+                </g>
+                <line x1="700" y1="360" x2="700" y2="454" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- Línea de matrimonio -->
+                <line x1="532" y1="480" x2="674" y2="480" stroke="#2c3e50" stroke-width="3"/>
+                <text x="603" y="475" text-anchor="middle" font-size="10" fill="#2c3e50">⚭ 2020</text>
+                
+                <!-- ==================== GENERACIÓN 4: HIJOS ==================== -->
+                
+                <!-- Línea descendencia de pareja -->
+                <line x1="600" y1="510" x2="600" y2="570" stroke="#2c3e50" stroke-width="2"/>
+                <line x1="480" y1="570" x2="720" y2="570" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- HIJA VIVA: VALENTINA -->
+                <g class="persona-grupo" transform="translate(480, 700)">
+                    <circle cx="0" cy="0" r="28" fill="url(#femaleGrad)" stroke="#c2185b" stroke-width="2"/>
+                    <text x="0" y="45" text-anchor="middle" font-size="11" font-weight="600" fill="#2c3e50">Valentina</text>
+                    <text x="0" y="58" text-anchor="middle" font-size="9" fill="#7f8c8d">Arias Fraile</text>
+                    <text x="0" y="71" text-anchor="middle" font-size="8" fill="#7f8c8d">2022 (3 años)</text>
+                    <text x="0" y="84" text-anchor="middle" font-size="7" fill="#95a5a6">Primera hija</text>
+                </g>
+                <line x1="480" y1="570" x2="480" y2="672" stroke="#2c3e50" stroke-width="2"/>
+                
+                <!-- PÉRDIDA GESTACIONAL -->
+                <g class="persona-grupo" transform="translate(720, 700)">
+                    <!-- Triángulo para pérdida gestacional (símbolo GenoPro) -->
+                    <polygon points="0,-30 35,25 -35,25" fill="url(#lossGrad)" stroke="#8e44ad" stroke-width="2"/>
+                    <line x1="-40" y1="30" x2="40" y2="-35" stroke="#c0392b" stroke-width="3"/>
+                    <text x="0" y="5" text-anchor="middle" font-size="14" fill="#8e44ad">✝</text>
+                    <text x="0" y="50" text-anchor="middle" font-size="10" font-weight="700" fill="#8e44ad">BEBÉ</text>
+                    <text x="0" y="63" text-anchor="middle" font-size="9" fill="#7f8c8d">Pérdida gestacional</text>
+                    <text x="0" y="76" text-anchor="middle" font-size="8" fill="#c0392b">~3 meses gestación</text>
+                    <text x="0" y="89" text-anchor="middle" font-size="8" fill="#c0392b">Oct 2025</text>
+                    <rect class="tooltip-box" x="-110" y="-110" width="220" height="70" rx="5" fill="#8e44ad" opacity="0.95"/>
+                    <text class="tooltip-box" x="0" y="-88" text-anchor="middle" font-size="9" fill="white" font-weight="bold">PÉRDIDA GESTACIONAL</text>
+                    <text class="tooltip-box" x="0" y="-73" text-anchor="middle" font-size="9" fill="white">Aborto espontáneo - 1er trimestre</text>
+                    <text class="tooltip-box" x="0" y="-58" text-anchor="middle" font-size="9" fill="white">Reconocido emocionalmente como hijo</text>
+                    <text class="tooltip-box" x="0" y="-43" text-anchor="middle" font-size="9" fill="white">Duelo minimizado por entorno</text>
+                </g>
+                <line x1="720" y1="570" x2="720" y2="670" stroke="#8e44ad" stroke-width="2" stroke-dasharray="5,3"/>
+                
+                <!-- ==================== RELACIONES EMOCIONALES ==================== -->
+                
+                <!-- Relación cercana: Esposos -->
+                <line x1="532" y1="485" x2="674" y2="485" stroke="#27ae60" stroke-width="2"/>
+                <text x="603" y="498" text-anchor="middle" font-size="8" fill="#27ae60">Estable</text>
+                
+                <!-- Relación de madre con familia: minimización -->
+                <path d="M 420 305 Q 380 400 490 450" fill="none" stroke="#e67e22" stroke-width="2" stroke-dasharray="6,3"/>
+                <text x="400" y="380" font-size="8" fill="#e67e22" transform="rotate(-20 400 380)">Minimización</text>
+                <text x="410" y="395" font-size="8" fill="#e67e22" transform="rotate(-20 410 395)">del duelo</text>
+                
+                <!-- Línea de duelo: María-Bebé perdido -->
+                <line x1="530" y1="500" x2="685" y2="680" stroke="#8e44ad" stroke-width="3" stroke-dasharray="8,4"/>
+                <text x="610" y="600" font-size="9" fill="#8e44ad" font-weight="600" transform="rotate(40 610 600)">DUELO</text>
+                
+                <!-- Relación cercana: María-Valentina -->
+                <line x1="500" y1="512" x2="485" y2="670" stroke="#27ae60" stroke-width="2"/>
+                <line x1="495" y1="512" x2="480" y2="670" stroke="#27ae60" stroke-width="2"/>
+                <text x="475" y="590" font-size="8" fill="#27ae60" transform="rotate(-5 475 590)">Cercana</text>
+                
+                <!-- Cuadro de contexto del duelo -->
+                <rect x="880" y="550" width="280" height="200" rx="10" fill="#f5eef8" stroke="#8e44ad" stroke-width="2"/>
+                <text x="1020" y="575" text-anchor="middle" font-size="11" font-weight="bold" fill="#6c3483">CONTEXTO DEL DUELO</text>
+                <text x="1020" y="595" text-anchor="middle" font-size="11" font-weight="bold" fill="#6c3483">PERINATAL</text>
+                <line x1="900" y1="605" x2="1140" y2="605" stroke="#8e44ad" stroke-width="1"/>
+                <text x="900" y="625" font-size="9" fill="#555">• Pérdida: Octubre 2025</text>
+                <text x="900" y="645" font-size="9" fill="#555">• Tiempo de gestación: ~3 meses</text>
+                <text x="900" y="665" font-size="9" fill="#555">• Tipo: Aborto espontáneo</text>
+                <text x="900" y="685" font-size="9" fill="#e74c3c">• Duelo NO reconocido socialmente</text>
+                <text x="900" y="705" font-size="9" fill="#555">• Impacto en autoconcepto</text>
+                <text x="900" y="725" font-size="9" fill="#555">• "Se muestra funcional para Valentina"</text>
+                <text x="900" y="745" font-size="9" fill="#e74c3c" font-weight="600">• Contención emocional activa</text>
+                
+            </svg>
+        </div>
+        
+        <div class="duelo-perinatal-section">
+            <h3>🕊️ Sobre el Duelo Perinatal</h3>
+            <p>
+                El duelo perinatal se refiere a la pérdida de un bebé durante el embarazo, parto o período neonatal. 
+                En este caso, María del Carmen experimenta un <strong>duelo desautorizado</strong>: la sociedad y su entorno familiar 
+                minimizan su pérdida al considerar que "solo eran 3 meses" o que "ya tendrá otros hijos". 
+                Este tipo de invalidación complica el proceso de duelo, generando sentimientos de incomprensión, 
+                aislamiento emocional y dificultad para expresar el dolor. La paciente reconoce emocionalmente al bebé como su hijo, 
+                lo cual es clínicamente significativo y debe ser validado en el acompañamiento tanatológico.
+            </p>
+        </div>
+        
+        <div class="notas-section">
+            <h3>📋 Notas Clínicas Relevantes</h3>
+            <div class="notas-grid">
+                <div class="nota-card warning">
+                    <h4>Motivo de Consulta</h4>
+                    <p>Duelo por pérdida gestacional (~3 meses) ocurrida en octubre 2025. Presenta tristeza persistente, sensación de vacío emocional, pensamientos recurrentes sobre el bebé perdido y sensación de no tener permiso social para expresar su dolor.</p>
+                </div>
+                <div class="nota-card special">
+                    <h4>Duelo Desautorizado</h4>
+                    <p>El entorno familiar y social minimiza la pérdida: "eran solo 3 meses", "ya tendrás otros", "al menos tienes a Valentina". Esto genera sentimientos de incomprensión y aislamiento emocional en la paciente.</p>
+                </div>
+                <div class="nota-card">
+                    <h4>Impacto en Autoconcepto</h4>
+                    <p>La pérdida ha afectado significativamente su autoconcepto como mujer y su vivencia de la maternidad. Intenta mostrarse funcional para su hija Valentina (3 años), conteniendo su tristeza.</p>
+                </div>
+                <div class="nota-card success">
+                    <h4>Recursos y Fortalezas</h4>
+                    <p>Relación de pareja estable con Juan Luis. Red familiar presente (aunque invalidante). Hija Valentina como motivación. Capacidad de buscar ayuda profesional.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="leyenda-section">
+            <h3>SIMBOLOGÍA DEL GENOGRAMA (Basada en GenoPro)</h3>
+            <div class="leyenda-grid">
+                <div class="leyenda-categoria">
+                    <h4>Género</h4>
+                    <div class="leyenda-items">
+                        <div class="leyenda-item">
+                            <svg class="leyenda-simbolo" viewBox="0 0 30 30">
+                                <rect x="5" y="5" width="20" height="20" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+                            </svg>
+                            <span>Hombre</span>
+                        </div>
+                        <div class="leyenda-item">
+                            <svg class="leyenda-simbolo" viewBox="0 0 30 30">
+                                <circle cx="15" cy="15" r="10" fill="#fce4ec" stroke="#c2185b" stroke-width="2"/>
+                            </svg>
+                            <span>Mujer</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="leyenda-categoria">
+                    <h4>Pérdidas Gestacionales</h4>
+                    <div class="leyenda-items">
+                        <div class="leyenda-item">
+                            <svg class="leyenda-simbolo" viewBox="0 0 30 30">
+                                <polygon points="15,5 27,23 3,23" fill="#f3e5f5" stroke="#8e44ad" stroke-width="2"/>
+                            </svg>
+                            <span>Embarazo / Pérdida gestacional</span>
+                        </div>
+                        <div class="leyenda-item">
+                            <svg class="leyenda-simbolo" viewBox="0 0 30 30">
+                                <polygon points="15,5 27,23 3,23" fill="#f3e5f5" stroke="#8e44ad" stroke-width="2"/>
+                                <line x1="3" y1="27" x2="27" y2="3" stroke="#c0392b" stroke-width="2"/>
+                            </svg>
+                            <span>Aborto espontáneo</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="leyenda-categoria">
+                    <h4>Estado y Roles</h4>
+                    <div class="leyenda-items">
+                        <div class="leyenda-item">
+                            <svg class="leyenda-simbolo" viewBox="0 0 30 30">
+                                <circle cx="15" cy="15" r="12" fill="none" stroke="#27ae60" stroke-width="2"/>
+                                <circle cx="15" cy="15" r="8" fill="#fce4ec" stroke="#c2185b" stroke-width="2"/>
+                            </svg>
+                            <span>Paciente Identificado (PI)</span>
+                        </div>
+                        <div class="leyenda-item">
+                            <svg class="leyenda-simbolo" viewBox="0 0 30 30">
+                                <rect x="5" y="5" width="20" height="20" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+                                <line x1="3" y1="27" x2="27" y2="3" stroke="#c0392b" stroke-width="2"/>
+                            </svg>
+                            <span>Fallecido</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="leyenda-categoria">
+                    <h4>Relaciones</h4>
+                    <div class="leyenda-items">
+                        <div class="leyenda-item">
+                            <svg class="leyenda-simbolo" viewBox="0 0 30 10">
+                                <line x1="0" y1="5" x2="30" y2="5" stroke="#2c3e50" stroke-width="3"/>
+                            </svg>
+                            <span>Matrimonio</span>
+                        </div>
+                        <div class="leyenda-item">
+                            <svg class="leyenda-simbolo" viewBox="0 0 30 10">
+                                <line x1="0" y1="3" x2="30" y2="3" stroke="#27ae60" stroke-width="2"/>
+                                <line x1="0" y1="7" x2="30" y2="7" stroke="#27ae60" stroke-width="2"/>
+                            </svg>
+                            <span>Relación cercana</span>
+                        </div>
+                        <div class="leyenda-item">
+                            <svg class="leyenda-simbolo" viewBox="0 0 30 10">
+                                <line x1="0" y1="5" x2="30" y2="5" stroke="#e67e22" stroke-width="2" stroke-dasharray="6,3"/>
+                            </svg>
+                            <span>Conflicto / Minimización</span>
+                        </div>
+                        <div class="leyenda-item">
+                            <svg class="leyenda-simbolo" viewBox="0 0 30 10">
+                                <line x1="0" y1="5" x2="30" y2="5" stroke="#8e44ad" stroke-width="3" stroke-dasharray="8,4"/>
+                            </svg>
+                            <span>Vínculo con pérdida (duelo)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Genograma elaborado con fines didácticos | Examinador: Laura Liliana Arias Bravo | Historia Clínica Tanatológica | Enero 2026
+        </div>
+    </div>
+</body>
+</html>

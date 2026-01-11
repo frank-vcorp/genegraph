@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genograma - Mariana Carreño Chedrahui</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header h2 {
+            font-size: 1.2rem;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+        
+        .header .fecha {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+        
+        .genograma-container {
+            padding: 40px;
+            background: #fafbfc;
+        }
+        
+        .genograma {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .generacion {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 60px;
+            position: relative;
+        }
+        
+        .pareja {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            position: relative;
+        }
+        
+        .linea-matrimonio {
+            width: 40px;
+            height: 3px;
+            background: #2d5a87;
+        }
+        
+        .persona {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .persona:hover {
+            transform: scale(1.05);
+        }
+        
+        .persona:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        /* Símbolos */
+        .simbolo {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .hombre {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 3px solid #1976d2;
+            box-shadow: 0 4px 6px rgba(25, 118, 210, 0.2);
+        }
+        
+        .mujer {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%);
+            border: 3px solid #c2185b;
+            border-radius: 50%;
+            box-shadow: 0 4px 6px rgba(194, 24, 91, 0.2);
+        }
+        
+        .fallecido::after {
+            content: '';
+            position: absolute;
+            width: 70px;
+            height: 3px;
+            background: #d32f2f;
+            transform: rotate(-45deg);
+            top: 50%;
+            left: 50%;
+            margin-left: -35px;
+            margin-top: -1.5px;
+        }
+        
+        .mascota {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            border: 3px solid #f57c00;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(245, 124, 0, 0.2);
+        }
+        
+        .mascota::before {
+            content: '🐱';
+            font-size: 24px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .info {
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        .nombre {
+            font-weight: 600;
+            color: #1e3a5f;
+            font-size: 0.85rem;
+            max-width: 100px;
+        }
+        
+        .edad {
+            color: #666;
+            font-size: 0.75rem;
+            margin-top: 2px;
+        }
+        
+        .relacion {
+            color: #888;
+            font-size: 0.7rem;
+            font-style: italic;
+            margin-top: 2px;
+        }
+        
+        /* Líneas de conexión */
+        .linea-vertical {
+            width: 3px;
+            height: 40px;
+            background: #2d5a87;
+            margin: 0 auto;
+        }
+        
+        .linea-horizontal {
+            height: 3px;
+            background: #2d5a87;
+            position: absolute;
+        }
+        
+        .conexion-hijos {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .rama-hijos {
+            display: flex;
+            justify-content: center;
+            gap: 80px;
+            position: relative;
+        }
+        
+        .rama-hijos::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 160px;
+            height: 3px;
+            background: #2d5a87;
+        }
+        
+        .hijo-conexion {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .hijo-conexion .linea-vertical {
+            height: 25px;
+        }
+        
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-10px);
+            background: #1e3a5f;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -8px;
+            border-width: 8px;
+            border-style: solid;
+            border-color: #1e3a5f transparent transparent transparent;
+        }
+        
+        /* Leyenda */
+        .leyenda {
+            background: white;
+            padding: 30px;
+            border-top: 1px solid #eee;
+        }
+        
+        .leyenda h3 {
+            color: #1e3a5f;
+            margin-bottom: 20px;
+            font-size: 1rem;
+        }
+        
+        .leyenda-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+        }
+        
+        .leyenda-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: #555;
+        }
+        
+        .leyenda-simbolo {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .leyenda-simbolo.hombre {
+            width: 25px;
+            height: 25px;
+        }
+        
+        .leyenda-simbolo.mujer {
+            width: 25px;
+            height: 25px;
+        }
+        
+        .leyenda-linea {
+            width: 30px;
+            height: 3px;
+            background: #2d5a87;
+        }
+        
+        .leyenda-linea.fallecido {
+            background: #d32f2f;
+            transform: rotate(-45deg);
+        }
+        
+        /* Paciente identificado */
+        .paciente-id .simbolo {
+            box-shadow: 0 0 0 4px #4caf50, 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+        
+        /* Notas clínicas */
+        .notas {
+            background: #fff8e1;
+            padding: 25px 30px;
+            border-left: 4px solid #ffc107;
+            margin: 0 30px 30px 30px;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .notas h4 {
+            color: #f57c00;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+        
+        .notas p {
+            color: #666;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        
+        /* Relación especial con mascota */
+        .vinculo-especial {
+            stroke-dasharray: 5,5;
+            stroke: #f57c00;
+            stroke-width: 2;
+        }
+        
+        .seccion-mascota {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px dashed #f57c00;
+        }
+        
+        .etiqueta-vinculo {
+            background: #fff3e0;
+            color: #e65100;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        /* Footer */
+        .footer {
+            background: #f5f5f5;
+            padding: 20px 30px;
+            text-align: center;
+            color: #888;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>GENOGRAMA FAMILIAR</h1>
+            <h2>Mariana Carreño Chedrahui</h2>
+            <div class="fecha">Fecha de elaboración: 15 de diciembre de 2025</div>
+        </div>
+        
+        <div class="genograma-container">
+            <div class="genograma">
+                <!-- Generación Padres -->
+                <div class="generacion">
+                    <div class="pareja">
+                        <div class="persona">
+                            <div class="tooltip">Padre fallecido hace 8 años<br>Causa: Infarto</div>
+                            <div class="simbolo hombre fallecido"></div>
+                            <div class="info">
+                                <div class="nombre">Padre</div>
+                                <div class="edad">✝ (hace 8 años)</div>
+                                <div class="relacion">Figura protectora</div>
+                            </div>
+                        </div>
+                        <div class="linea-matrimonio"></div>
+                        <div class="persona">
+                            <div class="tooltip">Madre viva, 62 años<br>Relación cercana pero con<br>invalidación emocional</div>
+                            <div class="simbolo mujer"></div>
+                            <div class="info">
+                                <div class="nombre">Madre</div>
+                                <div class="edad">62 años</div>
+                                <div class="relacion">Presente pero invalidante</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Línea de conexión a hijos -->
+                <div class="conexion-hijos">
+                    <div class="linea-vertical"></div>
+                    <div class="rama-hijos">
+                        <div class="hijo-conexion">
+                            <div class="linea-vertical"></div>
+                            <div class="persona">
+                                <div class="tooltip">Hermano mayor, 40 años<br>Contacto esporádico</div>
+                                <div class="simbolo hombre"></div>
+                                <div class="info">
+                                    <div class="nombre">Hermano</div>
+                                    <div class="edad">40 años</div>
+                                    <div class="relacion">Contacto esporádico</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="hijo-conexion">
+                            <div class="linea-vertical"></div>
+                            <div class="persona paciente-id">
+                                <div class="tooltip">PACIENTE IDENTIFICADA<br>Diseñadora gráfica, 36 años<br>Duelo por pérdida de mascota</div>
+                                <div class="simbolo mujer"></div>
+                                <div class="info">
+                                    <div class="nombre">Mariana</div>
+                                    <div class="edad">36 años</div>
+                                    <div class="relacion">Paciente identificada</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sección Mascota - Vínculo significativo -->
+                <div class="seccion-mascota">
+                    <div class="etiqueta-vinculo">⬇ VÍNCULO SIGNIFICATIVO</div>
+                    <div class="persona">
+                        <div class="tooltip">Gato "Simón" - Fallecido<br>Hace 1 mes por complicaciones renales<br>Figura de apego primario</div>
+                        <div class="simbolo mascota fallecido"></div>
+                        <div class="info">
+                            <div class="nombre">Simón 🐱</div>
+                            <div class="edad">✝ (hace 1 mes)</div>
+                            <div class="relacion">Apego primario tras<br>muerte del padre</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="notas">
+            <h4>📋 Notas Clínicas Relevantes</h4>
+            <p>
+                <strong>Motivo de consulta:</strong> Duelo por pérdida de mascota (gato "Simón").<br>
+                <strong>Observaciones:</strong> El gato era considerado miembro significativo del sistema familiar, especialmente tras la muerte del padre. 
+                La paciente refiere sentirse incomprendida por su entorno. Se asocian emocionalmente la muerte del padre y la del gato.
+                Relación con la madre presenta invalidación emocional ("era solo un gato").
+            </p>
+        </div>
+        
+        <div class="leyenda">
+            <h3>Simbología</h3>
+            <div class="leyenda-items">
+                <div class="leyenda-item">
+                    <div class="leyenda-simbolo hombre"></div>
+                    <span>Hombre</span>
+                </div>
+                <div class="leyenda-item">
+                    <div class="leyenda-simbolo mujer"></div>
+                    <span>Mujer</span>
+                </div>
+                <div class="leyenda-item">
+                    <div class="leyenda-linea"></div>
+                    <span>Matrimonio</span>
+                </div>
+                <div class="leyenda-item">
+                    <div class="leyenda-linea fallecido"></div>
+                    <span>Fallecido</span>
+                </div>
+                <div class="leyenda-item">
+                    <span style="color: #4caf50; font-weight: bold;">◉</span>
+                    <span>Paciente identificado</span>
+                </div>
+                <div class="leyenda-item">
+                    <span>🐱</span>
+                    <span>Mascota significativa</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Examinador: Laura Liliana Arias Bravo | Historia Clínica Tanatológica
+        </div>
+    </div>
+</body>
+</html>
