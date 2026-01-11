@@ -16,8 +16,9 @@ import 'reactflow/dist/style.css';
 import PersonNode from './PersonNode';
 import { RelationshipEdge } from './RelationshipEdge';
 import { RelationshipModal } from './RelationshipModal';
+import Swimlanes from './Swimlanes';
 import SaveStatus from './SaveStatus';
-import { Plus } from 'lucide-react';
+import { Plus, Eye, EyeOff } from 'lucide-react';
 
 const nodeTypes = {
   personNode: PersonNode,
@@ -30,6 +31,7 @@ const edgeTypes = {
 export default function Canvas() {
   const { currentGenogram, addPerson, addConnection, viewMode, selectPerson, updatePerson } = useGenogramStore();
   const [showRelationshipModal, setShowRelationshipModal] = useState(false);
+  const [showSwimlanes, setShowSwimlanes] = useState(true);
   const [selectedConnection, setSelectedConnection] = useState<{
     sourceId: string;
     targetId: string;
@@ -107,11 +109,16 @@ export default function Canvas() {
         const mouseX = e.clientX;
         const mouseY = e.clientY;
         const canvasRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        const now = Date.now();
         
         const newPerson: Omit<Person, 'id'> = {
-          name: `Persona ${currentGenogram.persons.length + 1}`,
-          gender: draggedItem.personType,
+          firstName: 'Persona',
+          lastName: `#${currentGenogram.persons.length + 1}`,
+          gender: draggedItem.personType || 'unknown',
           generation: 2,
+          isDeceased: false,
+          blockAgeCalculation: true,
+          medicalConditions: [],
           position: {
             x: mouseX - canvasRect.left,
             y: mouseY - canvasRect.top,
@@ -120,8 +127,10 @@ export default function Canvas() {
             status: 'alive',
             isPrimaryPatient: false,
             isPrimaryCareiver: false,
-            conditions: [],
           },
+          tags: [],
+          createdAt: now,
+          updatedAt: now,
         };
         
         addPerson(newPerson);
@@ -141,8 +150,8 @@ export default function Canvas() {
       setSelectedConnection({
         sourceId,
         targetId,
-        sourceName: sourcePerson.name,
-        targetName: targetPerson.name,
+        sourceName: `${sourcePerson.firstName} ${sourcePerson.lastName}`,
+        targetName: `${targetPerson.firstName} ${targetPerson.lastName}`,
       });
       setShowRelationshipModal(true);
     }
@@ -176,18 +185,47 @@ export default function Canvas() {
             </div>
           </div>
         ) : (
-          <ReactFlow 
-            nodes={nodes} 
-            edges={edges}
-            onNodesChange={handleNodesChangeWithPersist}
-            onEdgesChange={onEdgesChange}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
-            fitView
-          >
-            <Background />
-            <Controls />
-          </ReactFlow>
+          <>
+            {/* Botón toggle para swimlanes */}
+            <div className="absolute top-4 right-12 z-40 flex gap-2">
+              <button
+                onClick={() => setShowSwimlanes(!showSwimlanes)}
+                className={`p-2 rounded-lg border transition-all ${
+                  showSwimlanes
+                    ? 'bg-blue-50 border-blue-300 text-blue-600'
+                    : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'
+                }`}
+                title={showSwimlanes ? 'Ocultar swimlanes' : 'Mostrar swimlanes'}
+              >
+                {showSwimlanes ? (
+                  <Eye size={18} />
+                ) : (
+                  <EyeOff size={18} />
+                )}
+              </button>
+            </div>
+
+            {/* Swimlanes overlay */}
+            <Swimlanes
+              persons={currentGenogram.persons}
+              enabled={showSwimlanes}
+              showLabels={true}
+            />
+
+            {/* React Flow Canvas */}
+            <ReactFlow 
+              nodes={nodes} 
+              edges={edges}
+              onNodesChange={handleNodesChangeWithPersist}
+              onEdgesChange={onEdgesChange}
+              nodeTypes={nodeTypes}
+              edgeTypes={edgeTypes}
+              fitView
+            >
+              <Background />
+              <Controls />
+            </ReactFlow>
+          </>
         )}
       </div>
 

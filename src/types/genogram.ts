@@ -174,6 +174,7 @@ export interface Genogram {
   persons: Person[];
   relationships: Relationship[]; // Nuevo
   connections: Connection[]; // Deprecated
+  notes?: string; // Notas clínicas adicionales
   metadata: {
     motivoConsulta?: string;
     examinador?: string;

@@ -1,10 +1,11 @@
 'use client';
 
-import { Person } from '@/types/genogram';
+import { Person, Gender } from '@/types/genogram';
 import { useGenogramStore } from '@/store/genogram';
 import { MEDICAL_CONDITIONS } from '@/types/genogram';
+import { calculateAge, formatAge } from '@/logic/dates';
 import { Handle, Position, useReactFlow } from 'reactflow';
-import { Link2, Plus } from 'lucide-react';
+import { Link2 } from 'lucide-react';
 
 interface PersonNodeProps {
   data: { person: Person };
@@ -25,23 +26,114 @@ export default function PersonNode({ data, selected }: PersonNodeProps) {
   const person = data.person;
   const isSelected = selectedPersonId === person.id || selected;
 
-  // Determinar el símbolo según género y estado
-  const getSymbol = () => {
-    if (person.attributes.status === 'deceased') {
-      return '☠️';
+  // Determinar el símbolo según género y estado (GenoPro-style)
+  const getBaseSymbol = () => {
+    if (person.isDeceased) {
+      return '■'; // Cuadrado para fallecido
     }
 
     switch (person.gender) {
       case 'male':
-        return '□';
+        return '■'; // Cuadrado - hombre
       case 'female':
-        return '●';
-      case 'pet':
-        return '🐾';
+      case 'trans_female':
+        return '●'; // Círculo - mujer
+      case 'trans_male':
+      case 'other':
+        return '◇'; // Diamante - otros/trans
       case 'unknown':
       default:
-        return '◇';
+        return '□'; // Cuadrado vacío - desconocido
     }
+  };
+
+  // Agregador visual para género trans o especial
+  const getGenderModifier = () => {
+    switch (person.gender) {
+      case 'trans_male':
+      case 'trans_female':
+        return '▲'; // Triángulo para trans
+      case 'other':
+        return '±'; // Símbolo especial para otros
+      default:
+        return null;
+    }
+  };
+
+  // Obtener color de fondo según género
+  const getGenderColor = () => {
+    switch (person.gender) {
+      case 'male':
+        return '#E8F0FE'; // Azul claro
+      case 'female':
+        return '#FEE8F0'; // Rosa claro
+      case 'trans_male':
+        return '#E8F8F0'; // Verde-azul claro
+      case 'trans_female':
+        return '#F8E8F8'; // Lila claro
+      case 'other':
+        return '#F8F0E8'; // Naranja claro
+      case 'unknown':
+        return '#F0F0F0'; // Gris claro
+      default:
+        return '#FFFFFF';
+    }
+  };
+
+  // Estado visual de embarazo/aborto
+  const getPregnancyVisualization = () => {
+    if (!person.pregnancyStatus || person.pregnancyStatus === 'none') {
+      return null;
+    }
+
+    switch (person.pregnancyStatus) {
+      case 'pregnant':
+        return { icon: '◀', color: '#90EE90' }; // Verde - embarazada
+      case 'miscarriage':
+        return { icon: '×', color: '#FFB6C6' }; // Rosa - aborto
+      case 'abortion':
+        return { icon: '×', color: '#FFB6C6' }; // Rosa - aborto
+      case 'stillbirth':
+        return { icon: '↓', color: '#C0C0C0' }; // Gris - mortinato
+      default:
+        return null;
+    }
+  };
+
+  // Cuadrante de condición médica (GenoPro style)
+  const getMedicalConditionQuadrant = () => {
+    if (!person.medicalConditions || person.medicalConditions.length === 0) {
+      return null;
+    }
+
+    // Usar la primera condición para el cuadrante visual
+    const primaryCondition = person.medicalConditions[0];
+    const conditionDef = MEDICAL_CONDITIONS.find(c => c.id === primaryCondition.code);
+    
+    return {
+      color: primaryCondition.color || conditionDef?.color || '#FF0000',
+      quadrant: conditionDef?.quadrant || 'top_right'
+    };
+  };
+
+  // Rendering del cuadrante
+  const renderConditionQuadrant = (quadrant: string, color: string) => {
+    const quadrantClasses = {
+      'top_right': 'absolute top-0 right-0 w-3 h-3 rounded-bl',
+      'top_left': 'absolute top-0 left-0 w-3 h-3 rounded-br',
+      'bottom_right': 'absolute bottom-0 right-0 w-3 h-3 rounded-tl',
+      'bottom_left': 'absolute bottom-0 left-0 w-3 h-3 rounded-tr',
+      'front': 'absolute -top-1 -right-1 w-3 h-3 rounded-full',
+      'corner': 'absolute top-1 right-1 w-2 h-2 rounded-full',
+    };
+
+    return (
+      <div 
+        className={quadrantClasses[quadrant as keyof typeof quadrantClasses] || quadrantClasses['top_right']}
+        style={{ backgroundColor: color }}
+        title={person.medicalConditions?.[0]?.name}
+      />
+    );
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -83,6 +175,13 @@ export default function PersonNode({ data, selected }: PersonNodeProps) {
     }
   };
 
+  const baseSymbol = getBaseSymbol();
+  const modifier = getGenderModifier();
+  const pregnancyViz = getPregnancyVisualization();
+  const medicalQuadrant = getMedicalConditionQuadrant();
+  const age = calculateAge(person.birthDate, person.blockAgeCalculation);
+  const ageDisplay = formatAge(person.birthDate, person.blockAgeCalculation, person.isDeceased);
+
   return (
     <>
       <Handle type="target" position={Position.Top} />
@@ -91,53 +190,95 @@ export default function PersonNode({ data, selected }: PersonNodeProps) {
         onClick={() => selectPerson(person.id)}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        className={`p-3 rounded-lg border-2 transition-all cursor-pointer ${
+        className={`relative p-2 md:p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:shadow-md ${
           isSelected
-            ? 'border-blue-500 bg-blue-50 shadow-lg scale-110'
-            : 'border-gray-300 bg-white hover:border-gray-400'
+            ? 'border-blue-500 bg-blue-50 shadow-lg scale-110 ring-2 ring-blue-400'
+            : 'border-gray-300 hover:border-blue-300 shadow-sm'
         } ${
           connectionMode && firstConnectionId === person.id
-            ? 'ring-2 ring-purple-500'
+            ? 'ring-2 ring-purple-500 bg-purple-50'
             : ''
-        } ${person.attributes.isPrimaryPatient ? 'ring-2 ring-green-500' : ''}`}
+        } ${person.attributes.isPrimaryPatient ? 'ring-2 ring-green-500' : ''} 
+        min-w-max w-32 md:w-40`}
+        style={{ backgroundColor: getGenderColor() }}
       >
-        {/* Símbolo Principal */}
-        <div className="text-3xl text-center mb-2">{getSymbol()}</div>
+        {/* Símbolo Principal con Fallecido Diagonal */}
+        <div className={`text-4xl md:text-5xl text-center mb-2 relative h-12 md:h-14 flex items-center justify-center transition-transform duration-200 hover:scale-110 ${
+          person.isDeceased ? 'opacity-70' : ''
+        }`}>
+          <div className="flex items-center justify-center gap-0.5">
+            <span>{baseSymbol}</span>
+            {modifier && <span className="text-lg md:text-2xl text-red-500 animate-pulse">{modifier}</span>}
+          </div>
+          
+          {/* Línea diagonal para fallecido */}
+          {person.isDeceased && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-12 h-px bg-gray-500 transform -rotate-45" />
+            </div>
+          )}
+
+          {/* Visualización de embarazo */}
+          {pregnancyViz && (
+            <div 
+              className="absolute -bottom-2 -right-2 w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-full border transition-transform duration-200 hover:scale-125"
+              style={{ 
+                backgroundColor: pregnancyViz.color + '40',
+                borderColor: pregnancyViz.color,
+              }}
+              title={person.pregnancyStatus}
+            >
+              <span className="text-xs md:text-sm" style={{ color: pregnancyViz.color }}>
+                {pregnancyViz.icon}
+              </span>
+            </div>
+          )}
+
+          {/* Cuadrante de Condición Médica (GenoPro Style) */}
+          {medicalQuadrant && renderConditionQuadrant(medicalQuadrant.quadrant, medicalQuadrant.color)}
+        </div>
 
         {/* Nombre */}
-        <p className="text-xs font-bold text-gray-800 text-center truncate">{person.name}</p>
+        <p className="text-xs md:text-sm font-bold text-gray-800 text-center truncate px-1 transition-colors duration-200 hover:text-blue-700">
+          {person.firstName} {person.lastName}
+        </p>
 
         {/* Edad */}
-        {person.age && (
-          <p className="text-xs text-gray-600 text-center">{person.age}a</p>
+        {age !== undefined && (
+          <p className="text-xs text-gray-600 text-center transition-colors duration-200 hover:text-gray-800">{ageDisplay}</p>
         )}
 
-        {/* Condiciones como puntos pequeños */}
-        {person.attributes.conditions.length > 0 && (
-          <div className="flex gap-0.5 justify-center mt-2 flex-wrap">
-            {person.attributes.conditions.map((condId) => {
-              const cond = MEDICAL_CONDITIONS.find((c) => c.id === condId);
+        {/* Condiciones como lista de etiquetas (solo si >1) */}
+        {person.medicalConditions && person.medicalConditions.length > 1 && (
+          <div className="flex gap-0.5 justify-center mt-2 flex-wrap px-1">
+            {person.medicalConditions.slice(0, 3).map((cond) => {
+              const condDef = MEDICAL_CONDITIONS.find((c) => c.id === cond.code || c.id === cond.name);
               return (
                 <div
-                  key={condId}
-                  className="w-4 h-4 rounded-full flex items-center justify-center text-xs"
-                  style={{ backgroundColor: cond?.color + '30', color: cond?.color }}
-                  title={cond?.name}
+                  key={cond.id}
+                  className="px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-700 border border-gray-300 transition-all duration-200 hover:bg-blue-100 hover:border-blue-400 hover:text-blue-900 cursor-help"
+                  title={`${cond.name} (${cond.status})`}
                 >
-                  {cond?.icon.charAt(0)}
+                  {cond.name.substring(0, 3)}
                 </div>
               );
             })}
+            {person.medicalConditions.length > 3 && (
+              <span className="text-xs text-gray-500 transition-colors duration-200 hover:text-gray-700">+{person.medicalConditions.length - 3}</span>
+            )}
           </div>
         )}
 
         {/* Indicadores */}
-        <div className="flex justify-center gap-1 mt-2 text-xs">
+        <div className="flex justify-center gap-1 mt-2 text-sm md:text-base transition-all duration-200 hover:scale-110">
           {person.attributes.isPrimaryPatient && (
-            <span title="Paciente Identificado">👤</span>
+            <span title="Paciente Identificado" className="transition-transform hover:scale-125">👤</span>
           )}
           {person.attributes.isPrimaryCareiver && (
-            <span title="Cuidador Principal">⭐</span>
+            <span title="Cuidador Principal" className="transition-transform hover:scale-125">⭐</span>
+          )}
+          {person.twinGroupId && (
+            <span title={`${person.twinType} gemelos`} className="transition-transform hover:scale-125">👯</span>
           )}
         </div>
 
@@ -147,10 +288,10 @@ export default function PersonNode({ data, selected }: PersonNodeProps) {
             e.stopPropagation();
             handleConnect();
           }}
-          className={`w-full mt-2 py-1 px-2 rounded text-xs font-medium transition flex items-center justify-center gap-1 ${
+          className={`w-full mt-2 py-1 px-2 rounded text-xs font-medium transition-all duration-200 flex items-center justify-center gap-1 transform hover:scale-105 active:scale-95 ${
             connectionMode && firstConnectionId === person.id
-              ? 'bg-purple-500 text-white hover:bg-purple-600'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ? 'bg-purple-500 text-white hover:bg-purple-600 shadow-md'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm'
           }`}
         >
           <Link2 size={12} />

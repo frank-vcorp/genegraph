@@ -252,8 +252,12 @@ export function resolveSuperposition(persons: Person[]): Person[] {
     for (let j = i + 1; j < result.length; j++) {
       if (doNodesOverlap(result[i], result[j])) {
         // Mover person j a la derecha
-        if (result[j].x !== undefined) {
-          result[j].x = snapToGrid(result[j].x + LAYOUT_CONFIG.HORIZONTAL_SPACING);
+        const personJ = result[j];
+        if (personJ && personJ.x !== undefined) {
+          result[j] = {
+            ...personJ,
+            x: snapToGrid(personJ.x + LAYOUT_CONFIG.HORIZONTAL_SPACING),
+          };
         }
       }
     }

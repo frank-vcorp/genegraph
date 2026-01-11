@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Person, Connection, Genogram, Gender, Status, PersonAttributes, generateId } from '@/types/genogram';
+import { Person, Connection, Genogram, Gender, Status, PersonAttributes, generateId, MedicalCondition, DatePrecision } from '@/types/genogram';
 import { FirestoreService } from '@/lib/firestore-service';
 
 interface GenogramStore {
@@ -19,16 +19,30 @@ interface GenogramStore {
   setCurrentUserId: (userId: string | null) => void;
   createNewGenogram: (userId: string, patientName: string) => void;
   saveToFirestore: (userId: string, genogramId: string) => Promise<void>;
+  loadFromFirestore: (userId: string, genogramId: string) => Promise<void>;
   
-  // Acciones - Personas
+  // Acciones - Personas (Core CRUD)
   addPerson: (person: Omit<Person, 'id'>) => void;
   updatePerson: (id: string, updates: Partial<Person>) => void;
   removePerson: (id: string) => void;
   selectPerson: (id: string | null) => void;
   
-  // Acciones - Condiciones
-  addConditionToPerson: (personId: string, conditionId: string) => void;
-  removeConditionFromPerson: (personId: string, conditionId: string) => void;
+  // Acciones - Personas (Granulares)
+  setPersonGender: (personId: string, gender: Gender) => void;
+  setPersonGeneration: (personId: string, generation: number) => void;
+  setPersonStatus: (personId: string, status: Status) => void;
+  setPersonName: (personId: string, name: string) => void;
+  setTwinStatus: (personId: string, isTwin: boolean) => void;
+  setBirthDate: (personId: string, date: string, precision: DatePrecision) => void;
+  setDeathDate: (personId: string, date: string, precision: DatePrecision) => void;
+  setPersonPrimaryPatient: (personId: string, isPrimary: boolean) => void;
+  
+  // Acciones - Condiciones Médicas (Granulares)
+  addMedicalCondition: (personId: string, condition: MedicalCondition) => void;
+  updateMedicalCondition: (personId: string, conditionId: string, updates: Partial<MedicalCondition>) => void;
+  removeMedicalCondition: (personId: string, conditionId: string) => void;
+  addConditionToPerson: (personId: string, conditionId: string) => void; // Legacy
+  removeConditionFromPerson: (personId: string, conditionId: string) => void; // Legacy
   
   // Acciones - Conexiones
   addConnection: (connection: Omit<Connection, 'id'>) => void;
@@ -38,7 +52,6 @@ interface GenogramStore {
   setViewMode: (mode: 'classic' | 'modern') => void;
   setDraggingCondition: (isDragging: boolean, conditionId: string | null) => void;
   setConnectionMode: (enabled: boolean, firstId?: string | null) => void;
-  loadFromFirestore: (userId: string, genogramId: string) => Promise<void>;
 }
 
 export const useGenogramStore = create<GenogramStore>((set, get) => ({
@@ -65,6 +78,7 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
         createdAt: new Date(),
         updatedAt: new Date(),
         persons: [],
+        relationships: [],
         connections: [],
         metadata: {},
       },
@@ -76,7 +90,6 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
       const state = get();
       if (!state.currentGenogram) throw new Error('No genogram to save');
 
-      // 🚀 CP-010 FIX: Use optimized batch save instead of N+1 writes
       await FirestoreService.batchSaveGenogram(userId, state.currentGenogram);
 
       set({ isSyncing: false });
@@ -112,6 +125,8 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
     }
   },
 
+  // ============ ACCIONES PERSONAS - CORE CRUD ============
+
   addPerson: (person) =>
     set((state) => {
       if (!state.currentGenogram) return state;
@@ -120,7 +135,6 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
         id: generateId('person'),
       };
       
-      // Auto-save to Firestore if user is logged in
       if (state.currentUserId && state.currentGenogram.id) {
         FirestoreService.addPerson(state.currentUserId, state.currentGenogram.id, person).catch(
           (error) => console.error('Error saving person to Firestore:', error)
@@ -143,7 +157,6 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
     set((state) => {
       if (!state.currentGenogram) return state;
 
-      // Auto-save to Firestore if user is logged in
       if (state.currentUserId && state.currentGenogram.id) {
         FirestoreService.updatePerson(state.currentUserId, state.currentGenogram.id, id, updates).catch(
           (error) => console.error('Error updating person in Firestore:', error)
@@ -165,7 +178,6 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
     set((state) => {
       if (!state.currentGenogram) return state;
 
-      // Auto-delete from Firestore if user is logged in
       if (state.currentUserId && state.currentGenogram.id) {
         FirestoreService.deletePerson(state.currentUserId, state.currentGenogram.id, id).catch(
           (error) => console.error('Error deleting person from Firestore:', error)
@@ -187,6 +199,119 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
 
   selectPerson: (id) => set({ selectedPersonId: id }),
 
+  // ============ ACCIONES PERSONAS - GRANULARES ============
+
+  setPersonGender: (personId, gender) =>
+    get().updatePerson(personId, { gender }),
+
+  setPersonGeneration: (personId, generation) =>
+    get().updatePerson(personId, { generation }),
+
+  setPersonStatus: (personId, status) =>
+    get().updatePerson(personId, {
+      attributes: {
+        ...get().currentGenogram?.persons.find(p => p.id === personId)?.attributes,
+        status,
+      } as PersonAttributes,
+    }),
+
+  setPersonName: (personId, name) =>
+    get().updatePerson(personId, { name }),
+
+  setTwinStatus: (personId, isTwin) =>
+    get().updatePerson(personId, {
+      attributes: {
+        ...get().currentGenogram?.persons.find(p => p.id === personId)?.attributes,
+        isTwin,
+      } as PersonAttributes,
+    }),
+
+  setBirthDate: (personId, date, precision) =>
+    get().updatePerson(personId, {
+      birthDate: { date, precision },
+    }),
+
+  setDeathDate: (personId, date, precision) =>
+    get().updatePerson(personId, {
+      deathDate: { date, precision },
+    }),
+
+  setPersonPrimaryPatient: (personId, isPrimary) =>
+    get().updatePerson(personId, {
+      attributes: {
+        ...get().currentGenogram?.persons.find(p => p.id === personId)?.attributes,
+        isPrimaryPatient: isPrimary,
+      } as PersonAttributes,
+    }),
+
+  // ============ ACCIONES CONDICIONES MÉDICAS ============
+
+  addMedicalCondition: (personId, condition) =>
+    set((state) => {
+      if (!state.currentGenogram) return state;
+
+      return {
+        currentGenogram: {
+          ...state.currentGenogram,
+          persons: state.currentGenogram.persons.map((p) =>
+            p.id === personId
+              ? {
+                  ...p,
+                  medicalConditions: [
+                    ...p.medicalConditions,
+                    { ...condition, id: condition.id || generateId('condition') },
+                  ],
+                }
+              : p
+          ),
+          updatedAt: new Date(),
+        },
+      };
+    }),
+
+  updateMedicalCondition: (personId, conditionId, updates) =>
+    set((state) => {
+      if (!state.currentGenogram) return state;
+
+      return {
+        currentGenogram: {
+          ...state.currentGenogram,
+          persons: state.currentGenogram.persons.map((p) =>
+            p.id === personId
+              ? {
+                  ...p,
+                  medicalConditions: p.medicalConditions.map((c) =>
+                    c.id === conditionId ? { ...c, ...updates } : c
+                  ),
+                }
+              : p
+          ),
+          updatedAt: new Date(),
+        },
+      };
+    }),
+
+  removeMedicalCondition: (personId, conditionId) =>
+    set((state) => {
+      if (!state.currentGenogram) return state;
+
+      return {
+        currentGenogram: {
+          ...state.currentGenogram,
+          persons: state.currentGenogram.persons.map((p) =>
+            p.id === personId
+              ? {
+                  ...p,
+                  medicalConditions: p.medicalConditions.filter((c) => c.id !== conditionId),
+                }
+              : p
+          ),
+          updatedAt: new Date(),
+        },
+      };
+    }),
+
+  // Legacy methods (mantener para backward compatibility)
   addConditionToPerson: (personId, conditionId) =>
     set((state) => {
       if (!state.currentGenogram) return state;
@@ -194,13 +319,18 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
         currentGenogram: {
           ...state.currentGenogram,
           persons: state.currentGenogram.persons.map((p) =>
-            p.id === personId && !p.attributes.conditions.includes(conditionId)
+            p.id === personId && !p.medicalConditions.some(c => c.id === conditionId)
               ? {
                   ...p,
-                  attributes: {
-                    ...p.attributes,
-                    conditions: [...p.attributes.conditions, conditionId],
-                  },
+                  medicalConditions: [
+                    ...p.medicalConditions,
+                    {
+                      id: generateId('condition'),
+                      code: conditionId,
+                      name: conditionId,
+                      status: 'active',
+                    },
+                  ],
                 }
               : p
           ),
@@ -219,10 +349,7 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
             p.id === personId
               ? {
                   ...p,
-                  attributes: {
-                    ...p.attributes,
-                    conditions: p.attributes.conditions.filter((c) => c !== conditionId),
-                  },
+                  medicalConditions: p.medicalConditions.filter((c) => c.id !== conditionId),
                 }
               : p
           ),
@@ -230,6 +357,8 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
         },
       };
     }),
+
+  // ============ ACCIONES CONEXIONES ============
 
   addConnection: (connection) =>
     set((state) => {
@@ -239,7 +368,6 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
         id: generateId('connection'),
       };
 
-      // Auto-save to Firestore if user is logged in
       if (state.currentUserId && state.currentGenogram.id) {
         FirestoreService.addRelationship(state.currentUserId, state.currentGenogram.id, connection).catch(
           (error) => console.error('Error saving relationship to Firestore:', error)
@@ -262,7 +390,6 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
     set((state) => {
       if (!state.currentGenogram) return state;
 
-      // Auto-delete from Firestore if user is logged in
       if (state.currentUserId && state.currentGenogram.id) {
         FirestoreService.deleteRelationship(state.currentUserId, state.currentGenogram.id, id).catch(
           (error) => console.error('Error deleting relationship from Firestore:', error)
@@ -277,6 +404,8 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
         },
       };
     }),
+
+  // ============ ACCIONES UI ============
 
   setViewMode: (mode) => set({ viewMode: mode }),
 

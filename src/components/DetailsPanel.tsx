@@ -1,11 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { useGenogramStore } from '@/store/genogram';
 import { MEDICAL_CONDITIONS } from '@/types/genogram';
 import { X } from 'lucide-react';
+import MedicalConditionEditor from './MedicalConditionEditor';
+import { MedicalCondition } from '@/types/genogram';
 
 export default function DetailsPanel() {
   const { currentGenogram, selectedPersonId, updatePerson, selectPerson, removePerson, removeConditionFromPerson, addConditionToPerson } = useGenogramStore();
+  const [isMedicalEditorOpen, setIsMedicalEditorOpen] = useState(false);
 
   const selectedPerson = currentGenogram?.persons.find((p) => p.id === selectedPersonId);
 
@@ -17,9 +21,15 @@ export default function DetailsPanel() {
     );
   }
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFirstNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (selectedPersonId) {
-      updatePerson(selectedPersonId, { name: e.target.value });
+      updatePerson(selectedPersonId, { firstName: e.target.value });
+    }
+  };
+
+  const handleLastNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (selectedPersonId) {
+      updatePerson(selectedPersonId, { lastName: e.target.value });
     }
   };
 
@@ -32,7 +42,8 @@ export default function DetailsPanel() {
 
   const toggleCondition = (conditionId: string) => {
     if (!selectedPersonId) return;
-    if (selectedPerson.attributes.conditions.includes(conditionId)) {
+    const hasCondition = selectedPerson.medicalConditions.some(c => c.id === conditionId);
+    if (hasCondition) {
       removeConditionFromPerson(selectedPersonId, conditionId);
     } else {
       addConditionToPerson(selectedPersonId, conditionId);
@@ -59,6 +70,20 @@ export default function DetailsPanel() {
     });
   };
 
+  const toggleDeceased = () => {
+    if (!selectedPersonId) return;
+    updatePerson(selectedPersonId, {
+      isDeceased: !selectedPerson.isDeceased,
+    });
+  };
+
+  const handleMedicalConditionsSave = (conditions: MedicalCondition[]) => {
+    if (!selectedPersonId) return;
+    updatePerson(selectedPersonId, {
+      medicalConditions: conditions,
+    });
+  };
+
   return (
     <div className="w-80 bg-white rounded-lg shadow-md border border-gray-200 flex flex-col overflow-hidden">
       {/* Header */}
@@ -74,38 +99,45 @@ export default function DetailsPanel() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {/* Nombre */}
+        {/* Nombres */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre</label>
           <input
             type="text"
-            value={selectedPerson.name}
-            onChange={handleNameChange}
+            value={selectedPerson.firstName}
+            onChange={handleFirstNameChange}
+            placeholder="Nombre"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
+          />
+          <input
+            type="text"
+            value={selectedPerson.lastName}
+            onChange={handleLastNameChange}
+            placeholder="Apellido"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
-        {/* Estado */}
+        {/* Género */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">Estado</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Género</label>
           <select
-            value={selectedPerson.attributes.status}
+            value={selectedPerson.gender}
             onChange={(e) => {
               if (selectedPersonId) {
                 updatePerson(selectedPersonId, {
-                  attributes: {
-                    ...selectedPerson.attributes,
-                    status: e.target.value as any,
-                  },
+                  gender: e.target.value as any,
                 });
               }
             }}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="alive">Vivo</option>
-            <option value="deceased">Fallecido</option>
-            <option value="miscarriage">Pérdida gestacional</option>
-            <option value="abortion">Aborto</option>
+            <option value="unknown">Desconocido</option>
+            <option value="male">Hombre</option>
+            <option value="female">Mujer</option>
+            <option value="trans_male">Trans Hombre</option>
+            <option value="trans_female">Trans Mujer</option>
+            <option value="other">Otro</option>
           </select>
         </div>
 
@@ -129,26 +161,51 @@ export default function DetailsPanel() {
             />
             <span className="text-sm text-gray-700">Cuidador Principal</span>
           </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selectedPerson.isDeceased}
+              onChange={toggleDeceased}
+              className="w-4 h-4"
+            />
+            <span className="text-sm text-gray-700">Fallecido</span>
+          </label>
         </div>
 
         {/* Condiciones */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-3">Condiciones Médicas</label>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {MEDICAL_CONDITIONS.map((condition) => (
-              <label key={condition.id} className="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 rounded">
-                <input
-                  type="checkbox"
-                  checked={selectedPerson.attributes.conditions.includes(condition.id)}
-                  onChange={() => toggleCondition(condition.id)}
-                  className="w-4 h-4"
-                />
-                <span className="text-xl">{condition.icon}</span>
-                <span className="text-sm text-gray-700">{condition.name}</span>
-              </label>
-            ))}
+          <div className="flex items-center justify-between mb-3">
+            <label className="block text-sm font-semibold text-gray-700">Condiciones Médicas</label>
+            <button
+              onClick={() => setIsMedicalEditorOpen(true)}
+              className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded font-medium transition"
+            >
+              + Editar
+            </button>
           </div>
+          {selectedPerson.medicalConditions.length === 0 ? (
+            <p className="text-sm text-gray-500 italic">Sin condiciones registradas</p>
+          ) : (
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {selectedPerson.medicalConditions.map((condition) => (
+                <div key={condition.id} className="p-2 bg-blue-50 rounded border border-blue-200 text-sm">
+                  <div className="font-medium text-gray-800">{condition.name}</div>
+                  {condition.code && <div className="text-xs text-gray-600">CIE-10: {condition.code}</div>}
+                  {condition.status && <div className="text-xs text-gray-600">Estado: {condition.status}</div>}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* Medical Condition Editor Modal */}
+        <MedicalConditionEditor
+          isOpen={isMedicalEditorOpen}
+          onClose={() => setIsMedicalEditorOpen(false)}
+          conditions={selectedPerson.medicalConditions}
+          onSave={handleMedicalConditionsSave}
+          personName={`${selectedPerson.firstName} ${selectedPerson.lastName}`}
+        />
       </div>
 
       {/* Footer */}
