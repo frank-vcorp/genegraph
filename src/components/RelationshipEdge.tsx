@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   BaseEdge,
   EdgeLabelRenderer,
@@ -48,6 +48,7 @@ export const RelationshipEdge: React.FC<RelationshipEdgeProps> = ({
 }) => {
   const { getEdge, setEdges } = useReactFlow();
   const { removeConnection } = useGenogramStore();
+  const [isHovered, setIsHovered] = useState(false);
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -350,9 +351,33 @@ export const RelationshipEdge: React.FC<RelationshipEdgeProps> = ({
   const edgeStyle = getEdgeStyle();
   const edgeLabel = getEdgeLabel();
 
+  // Aplicar efectos de hover
+  const hoverEdgeStyle = isHovered
+    ? {
+        ...edgeStyle,
+        strokeWidth: (edgeStyle.strokeWidth || 2) + 1,
+        opacity: 1,
+        transition: 'all 0.2s ease-in-out',
+      }
+    : {
+        ...edgeStyle,
+        opacity: 0.7,
+        transition: 'all 0.2s ease-in-out',
+      };
+
   return (
     <>
-      <BaseEdge path={edgePath} style={edgeStyle} markerEnd={markerEnd} />
+      <g
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        style={{ cursor: 'pointer' }}
+      >
+        <BaseEdge
+          path={edgePath}
+          style={hoverEdgeStyle}
+          markerEnd={markerEnd}
+        />
+      </g>
       <EdgeLabelRenderer>
         <div
           style={{
@@ -360,12 +385,23 @@ export const RelationshipEdge: React.FC<RelationshipEdgeProps> = ({
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
             pointerEvents: 'all',
             fontSize: '12px',
+            opacity: isHovered ? 1 : 0.6,
+            transition: 'opacity 0.2s ease-in-out',
           }}
           className="nodrag nopan flex items-center gap-1"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
         >
           {/* Label de relación (opcional, solo si hay espacio) */}
           {edgeLabel && (
-            <div className="bg-white px-2 py-0.5 rounded-md text-xs font-medium text-gray-700 border border-gray-300 shadow-sm">
+            <div className="bg-white px-2 py-0.5 rounded-md text-xs font-medium text-gray-700 border border-gray-300 shadow-sm transition-all duration-200"
+              style={{
+                backgroundColor: isHovered ? '#f0f4ff' : '#ffffff',
+                borderColor: isHovered ? '#3b82f6' : '#d1d5db',
+                boxShadow: isHovered ? '0 2px 8px rgba(59, 130, 246, 0.3)' : '0 1px 3px rgba(0, 0, 0, 0.1)',
+                transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+              }}
+            >
               {edgeLabel}
             </div>
           )}
@@ -373,8 +409,11 @@ export const RelationshipEdge: React.FC<RelationshipEdgeProps> = ({
           {/* Botón de eliminar */}
           <button
             onClick={handleDelete}
-            className="bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs transition-colors shadow-md"
+            className="bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs transition-all duration-200 shadow-md hover:shadow-lg hover:scale-110 active:scale-95"
             title="Delete relationship"
+            style={{
+              opacity: isHovered ? 1 : 0.6,
+            }}
           >
             ✕
           </button>

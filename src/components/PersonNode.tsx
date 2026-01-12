@@ -182,14 +182,26 @@ export default function PersonNode({ data, selected }: PersonNodeProps) {
   const age = calculateAge(person.birthDate, person.blockAgeCalculation);
   const ageDisplay = formatAge(person.birthDate, person.blockAgeCalculation, person.isDeceased);
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Enter o Space para seleccionar persona (A11y keyboard navigation)
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      selectPerson(person.id);
+    }
+  };
+
   return (
     <>
       <Handle type="target" position={Position.Top} />
       
       <div
         onClick={() => selectPerson(person.id)}
+        onKeyDown={handleKeyDown}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
+        role="button"
+        tabIndex={0}
+        aria-label={`${person.firstName} ${person.lastName}, ${person.gender}`}
         className={`relative p-2 md:p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer hover:shadow-md ${
           isSelected
             ? 'border-blue-500 bg-blue-50 shadow-lg scale-110 ring-2 ring-blue-400'

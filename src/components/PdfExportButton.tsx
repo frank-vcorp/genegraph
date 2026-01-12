@@ -117,6 +117,19 @@ export default function PdfExportButton({
         )}
         PDF Moderno
       </button>
+
+      {/* Modal de carga para UX feedback */}
+      {isExporting && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 pointer-events-none">
+          <div className="bg-white rounded-lg shadow-2xl p-6 flex flex-col items-center gap-4">
+            <Loader className="animate-spin text-blue-500" size={40} />
+            <div className="text-center">
+              <p className="text-gray-700 font-semibold">Generando PDF...</p>
+              <p className="text-gray-500 text-sm">Por favor espera, no cierres esta ventana</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
