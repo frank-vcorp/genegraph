@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Person, Connection, Genogram, Gender, Status, PersonAttributes, generateId, MedicalCondition, DatePrecision } from '@/types/genogram';
 import { FirestoreService } from '@/lib/firestore-service';
+import { HistoryState, createEmptyHistory, pushToHistory, undo as undoHistory, redo as redoHistory, getHistoryInfo } from './history';
 
 interface GenogramStore {
   // Estado
@@ -13,6 +14,9 @@ interface GenogramStore {
   firstConnectionId: string | null;
   currentUserId: string | null;
   isSyncing: boolean;
+  history: HistoryState;
+  canUndo: boolean;
+  canRedo: boolean;
 
   // Acciones - Genograma
   setCurrentGenogram: (genogram: Genogram | null) => void;
@@ -52,6 +56,11 @@ interface GenogramStore {
   setViewMode: (mode: 'classic' | 'modern') => void;
   setDraggingCondition: (isDragging: boolean, conditionId: string | null) => void;
   setConnectionMode: (enabled: boolean, firstId?: string | null) => void;
+  
+  // Acciones - History (Undo/Redo)
+  undo: () => void;
+  redo: () => void;
+  pushHistory: (label: string) => void;
 }
 
 export const useGenogramStore = create<GenogramStore>((set, get) => ({
@@ -64,6 +73,9 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
   firstConnectionId: null,
   currentUserId: null,
   isSyncing: false,
+  history: createEmptyHistory(),
+  canUndo: false,
+  canRedo: false,
 
   setCurrentGenogram: (genogram) => set({ currentGenogram: genogram }),
 
@@ -141,15 +153,24 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
         );
       }
 
+      const updatedGenogram = {
+        ...state.currentGenogram,
+        persons: [
+          ...state.currentGenogram.persons,
+          newPerson,
+        ],
+        updatedAt: new Date(),
+      };
+
+      // Registrar en history después del cambio
+      const newHistory = pushToHistory(state.history, updatedGenogram, `Added person: ${newPerson.name}`);
+      const historyInfo = getHistoryInfo(newHistory);
+
       return {
-        currentGenogram: {
-          ...state.currentGenogram,
-          persons: [
-            ...state.currentGenogram.persons,
-            newPerson,
-          ],
-          updatedAt: new Date(),
-        },
+        currentGenogram: updatedGenogram,
+        history: newHistory,
+        canUndo: historyInfo.canUndo,
+        canRedo: historyInfo.canRedo,
       };
     }),
 
@@ -184,16 +205,25 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
         );
       }
 
+      const updatedGenogram = {
+        ...state.currentGenogram,
+        persons: state.currentGenogram.persons.filter((p) => p.id !== id),
+        connections: state.currentGenogram.connections.filter(
+          (c) => c.sourceId !== id && c.targetId !== id
+        ),
+        updatedAt: new Date(),
+      };
+
+      // Registrar en history después del cambio
+      const newHistory = pushToHistory(state.history, updatedGenogram, `Removed person: ${id}`);
+      const historyInfo = getHistoryInfo(newHistory);
+
       return {
-        currentGenogram: {
-          ...state.currentGenogram,
-          persons: state.currentGenogram.persons.filter((p) => p.id !== id),
-          connections: state.currentGenogram.connections.filter(
-            (c) => c.sourceId !== id && c.targetId !== id
-          ),
-          updatedAt: new Date(),
-        },
+        currentGenogram: updatedGenogram,
         selectedPersonId: state.selectedPersonId === id ? null : state.selectedPersonId,
+        history: newHistory,
+        canUndo: historyInfo.canUndo,
+        canRedo: historyInfo.canRedo,
       };
     }),
 
@@ -374,15 +404,24 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
         );
       }
 
+      const updatedGenogram = {
+        ...state.currentGenogram,
+        connections: [
+          ...state.currentGenogram.connections,
+          newConnection,
+        ],
+        updatedAt: new Date(),
+      };
+
+      // Registrar en history después del cambio
+      const newHistory = pushToHistory(state.history, updatedGenogram, `Added relationship`);
+      const historyInfo = getHistoryInfo(newHistory);
+
       return {
-        currentGenogram: {
-          ...state.currentGenogram,
-          connections: [
-            ...state.currentGenogram.connections,
-            newConnection,
-          ],
-          updatedAt: new Date(),
-        },
+        currentGenogram: updatedGenogram,
+        history: newHistory,
+        canUndo: historyInfo.canUndo,
+        canRedo: historyInfo.canRedo,
       };
     }),
 
@@ -396,12 +435,21 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
         );
       }
 
+      const updatedGenogram = {
+        ...state.currentGenogram,
+        connections: state.currentGenogram.connections.filter((c) => c.id !== id),
+        updatedAt: new Date(),
+      };
+
+      // Registrar en history después del cambio
+      const newHistory = pushToHistory(state.history, updatedGenogram, `Removed relationship: ${id}`);
+      const historyInfo = getHistoryInfo(newHistory);
+
       return {
-        currentGenogram: {
-          ...state.currentGenogram,
-          connections: state.currentGenogram.connections.filter((c) => c.id !== id),
-          updatedAt: new Date(),
-        },
+        currentGenogram: updatedGenogram,
+        history: newHistory,
+        canUndo: historyInfo.canUndo,
+        canRedo: historyInfo.canRedo,
       };
     }),
 
@@ -414,4 +462,59 @@ export const useGenogramStore = create<GenogramStore>((set, get) => ({
 
   setConnectionMode: (enabled, firstId = null) =>
     set({ connectionMode: enabled, firstConnectionId: firstId }),
+
+  // ============ ACCIONES HISTORY (UNDO/REDO) ============
+
+  /**
+   * Deshacer la última acción
+   * Restaura el genogram al estado anterior del history
+   */
+  undo: () =>
+    set((state) => {
+      const newHistory = undoHistory(state.history);
+      const historyInfo = getHistoryInfo(newHistory);
+      
+      return {
+        history: newHistory,
+        currentGenogram: newHistory.present?.genogram ?? null,
+        canUndo: historyInfo.canUndo,
+        canRedo: historyInfo.canRedo,
+      };
+    }),
+
+  /**
+   * Rehacer la última acción desecha
+   * Restaura el genogram al estado siguiente del history
+   */
+  redo: () =>
+    set((state) => {
+      const newHistory = redoHistory(state.history);
+      const historyInfo = getHistoryInfo(newHistory);
+      
+      return {
+        history: newHistory,
+        currentGenogram: newHistory.present?.genogram ?? null,
+        canUndo: historyInfo.canUndo,
+        canRedo: historyInfo.canRedo,
+      };
+    }),
+
+  /**
+   * Agregar un snapshot al history
+   * Se llama después de cambios significativos (add/update/remove)
+   * @param label Descripción de la acción para UI
+   */
+  pushHistory: (label: string) =>
+    set((state) => {
+      if (!state.currentGenogram) return state;
+      
+      const newHistory = pushToHistory(state.history, state.currentGenogram, label);
+      const historyInfo = getHistoryInfo(newHistory);
+
+      return {
+        history: newHistory,
+        canUndo: historyInfo.canUndo,
+        canRedo: historyInfo.canRedo,
+      };
+    }),
 }));

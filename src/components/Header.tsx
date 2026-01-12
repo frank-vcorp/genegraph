@@ -1,11 +1,11 @@
 'use client';
 
 import { useGenogramStore } from '@/store/genogram';
-import { Settings, Eye } from 'lucide-react';
+import { Settings, Eye, RotateCcw, RotateCw } from 'lucide-react';
 import PdfExportButton from './PdfExportButton';
 
 export default function Header() {
-  const { currentGenogram, viewMode, setViewMode } = useGenogramStore();
+  const { currentGenogram, viewMode, setViewMode, undo, redo, canUndo, canRedo } = useGenogramStore();
 
   const toggleViewMode = () => {
     setViewMode(viewMode === 'classic' ? 'modern' : 'classic');
@@ -24,6 +24,28 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-4">
+          {/* Undo/Redo Buttons */}
+          <div className="flex gap-2 border-l border-r border-gray-700 px-4">
+            <button
+              onClick={undo}
+              disabled={!canUndo}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+              title="Deshacer (Ctrl+Z)"
+            >
+              <RotateCcw size={16} />
+              <span className="hidden sm:inline">Undo</span>
+            </button>
+            <button
+              onClick={redo}
+              disabled={!canRedo}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+              title="Rehacer (Ctrl+Y)"
+            >
+              <RotateCw size={16} />
+              <span className="hidden sm:inline">Redo</span>
+            </button>
+          </div>
+
           <button
             onClick={toggleViewMode}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors text-sm font-medium"
